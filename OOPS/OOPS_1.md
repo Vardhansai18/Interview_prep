@@ -12,6 +12,8 @@
 8. [What is Data Abstraction?](#what-is-data-abstraction)
 9. [What is Encapsulation?](#what-is-encapsulation)
 10. [What is Inheritance and Its Types?](#what-is-inheritance-and-its-types)
+11. [What is the Diamond Problem?](#what-is-the-diamond-problem)
+12. [What is Polymorphism?](#what-is-polymorphism)
 
 ---
 
@@ -613,3 +615,309 @@ int main() {
 | Multilevel | A → B → C |
 | Hierarchical | A → B, C |
 | Hybrid | Combination |
+
+---
+
+## What is the Diamond Problem?
+
+**Structure (Why it's called "diamond")**
+
+```
+        Vehicle
+        /     \
+     Car     Bike
+        \     /
+     HybridVehicle
+```
+
+- Car and Bike both inherit from Vehicle
+- HybridVehicle inherits from both
+
+👉 This creates a diamond shape
+
+### ❌ Problem WITHOUT Virtual
+
+If you write:
+
+```cpp
+class Car : public Vehicle {};
+class Bike : public Vehicle {};
+class HybridVehicle : public Car, public Bike {};
+```
+
+**What happens internally:**
+
+HybridVehicle gets TWO copies of Vehicle
+
+```
+HybridVehicle
+ ├── Car → Vehicle (copy 1)
+ └── Bike → Vehicle (copy 2)
+```
+
+### 🚨 Ambiguity Issue
+
+```cpp
+HybridVehicle h;
+h.start();  // ❌ ERROR
+```
+
+**Compiler error:**
+
+“request is ambiguous”
+
+**Because:**
+
+- `start()` exists in two Vehicle objects
+- Compiler doesn't know which one to call
+
+### ⚠️ Memory Problem
+
+- Duplicate base class data
+- Waste of memory
+- Inconsistent state possible
+
+### ✅ Solution: Virtual Inheritance
+
+```cpp
+class Car : virtual public Vehicle {};
+class Bike : virtual public Vehicle {};
+```
+### 🔷 What Virtual Does
+
+It tells the compiler:
+
+"Ensure that only ONE shared instance of Vehicle exists, even if multiple paths inherit it."
+
+**✅ Internal structure WITH virtual**
+
+```
+HybridVehicle
+ ├── Car
+ ├── Bike
+ └── Vehicle (only ONE shared instance)
+```
+
+**✅ Now your code works**
+
+```cpp
+HybridVehicle h;
+h.start();   // ✅ no ambiguity
+```
+
+**Because:**
+
+- Only one Vehicle
+- Only one `start()`
+
+### 🔷 Full Working Example
+
+```cpp
+#include <iostream>
+using namespace std;
+
+class Vehicle {
+public:
+    void start() { cout << "Vehicle started\n"; }
+};
+
+// virtual inheritance
+class Car : virtual public Vehicle {};
+class Bike : virtual public Vehicle {};
+
+class HybridVehicle : public Car, public Bike {
+public:
+    void feature() { cout << "Hybrid features\n"; }
+};
+
+int main() {
+    HybridVehicle h;
+    h.start();     // no ambiguity
+    h.feature();
+}
+```
+
+### 🔷 Important Interview Concepts
+
+**✔️ 1. Constructor Call Order (VERY commonly asked)**
+
+With virtual inheritance:
+
+- Virtual base class (Vehicle) is constructed first
+- Then Car, Bike
+- Then HybridVehicle
+
+**✔️ 2. Who initializes Vehicle?**
+
+In virtual inheritance:    
+👉 Most derived class (HybridVehicle) is responsible
+
+```cpp
+class Vehicle {
+public:
+    Vehicle(int x) { cout << "Vehicle " << x << endl; }
+};
+
+class Car : virtual public Vehicle {
+public:
+    Car() : Vehicle(1) {}  // ignored
+};
+
+class Bike : virtual public Vehicle {
+public:
+    Bike() : Vehicle(2) {}  // ignored
+};
+
+class HybridVehicle : public Car, public Bike {
+public:
+    HybridVehicle() : Vehicle(100) {}  // ✅ actual call
+};
+```
+
+**✔️ 3. Why virtual is needed (perfect answer)**
+
+“Without virtual inheritance, multiple copies of the base class are created in a diamond hierarchy, leading to ambiguity and redundancy. Virtual inheritance ensures a single shared instance of the base class.”
+
+### 🔥 Interview-ready Explanation (Short)
+
+“Hybrid inheritance combines multiple and multilevel inheritance. In a diamond structure, if two classes inherit from the same base and a fourth class inherits from both, it creates ambiguity due to duplicate base instances. Virtual inheritance ensures only one shared base class instance, resolving this issue.”
+
+### ⚡ One-liner to Impress
+
+“Virtual inheritance removes duplication of base class subobjects in diamond hierarchies.”
+
+---
+
+## What is Polymorphism?
+
+**Definition:**  
+Polymorphism means:
+
+“One interface, multiple implementations.”
+
+In C++, it allows the same function call to behave differently depending on the object type.
+
+### 🔷 Your Example → Runtime Polymorphism
+
+```cpp
+Payment* p1 = new CreditCard();
+p1->pay();   // calls CreditCard::pay()
+```
+
+Even though the pointer type is `Payment*`,  
+👉 the actual object type (CreditCard) decides the behavior
+
+### 🔷 Types of Polymorphism in C++
+
+#### 1️⃣ Compile-Time Polymorphism (Static Binding)
+
+👉 Decided at compile time
+
+**✔️ Method: Function Overloading**
+
+```cpp
+#include <iostream>
+using namespace std;
+
+class Calculator {
+public:
+    int add(int a, int b) {
+        return a + b;
+    }
+
+    double add(double a, double b) {
+        return a + b;
+    }
+};
+
+int main() {
+    Calculator c;
+    cout << c.add(2, 3) << endl;        // int version
+    cout << c.add(2.5, 3.5) << endl;    // double version
+}
+```
+
+**🔷 Key idea:**
+- Same function name
+- Different parameters
+- Compiler decides which one to call
+
+#### 2️⃣ Runtime Polymorphism (Dynamic Binding)
+
+👉 Decided at runtime using `virtual`
+
+**✔️ Method: Function Overriding**
+
+Your example:
+
+```cpp
+#include <iostream>
+using namespace std;
+
+// Base class
+class Payment {
+public:
+    virtual void pay() {
+        cout << "Processing generic payment\n";
+    }
+};
+
+// Derived class 1
+class CreditCard : public Payment {
+public:
+    void pay() override {   // 👈 override
+        cout << "Payment done using Credit Card\n";
+    }
+};
+
+// Derived class 2
+class UPI : public Payment {
+public:
+    void pay() override {   // 👈 override
+        cout << "Payment done using UPI\n";
+    }
+};
+
+int main() {
+    Payment* p1 = new CreditCard();
+    Payment* p2 = new UPI();
+
+    p1->pay();  // CreditCard version
+    p2->pay();  // UPI version
+
+    delete p1;
+    delete p2;
+
+    return 0;
+}
+```
+
+**🔷 Key idea:**
+- Base pointer → derived object
+- Function resolved at runtime using vtable
+
+### 🔷 Difference Between Types
+
+| Feature | Compile-Time Polymorphism | Runtime Polymorphism |
+|---------|---------------------------|----------------------|
+| Binding | Early (compile time) | Late (runtime) |
+| Mechanism | Function Overloading | Function Overriding |
+| Inheritance | Not required | Required |
+| Keyword | No virtual | Uses `virtual` |
+| Performance | Faster | Slight overhead (vtable) |
+| Flexibility | Less | More |
+
+### 🔷 Real-life Analogy (Strong Answer)
+
+**Compile-time:**  
+Like a calculator → based on input type, correct function is chosen immediately
+
+**Runtime:**  
+Like payment system →
+- same `pay()` call
+- → behaves differently for CreditCard / UPI
+
+### 🔷 Interview-ready Definition
+
+“Polymorphism in C++ allows a single interface to represent different behaviors. It is achieved either at compile time through function overloading or at runtime through function overriding using virtual functions.”
+
