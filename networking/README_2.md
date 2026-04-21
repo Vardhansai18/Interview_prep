@@ -2,6 +2,23 @@
 
 Quick, layered explanation of what happens when you tap "Watch Live".
 
+## 📑 Table of Contents
+
+1. [Application Layer — What you interact with](#7️⃣-application-layer--what-you-interact-with)
+2. [Presentation Layer — Format & Security](#6️⃣-presentation-layer--format--security)
+3. [Session Layer — Connection management](#5️⃣-session-layer--connection-management)
+4. [Transport Layer — Reliable delivery](#4️⃣-transport-layer--reliable-delivery)
+5. [Network Layer — Routing across the internet](#3️⃣-network-layer--routing-across-the-internet)
+6. [Data Link Layer — Local delivery](#2️⃣-data-link-layer--local-delivery-lanwifi)
+7. [Physical Layer — Actual transmission](#1️⃣-physical-layer--actual-transmission)
+8. [End-to-End Flow (condensed)](#-end-to-end-flow-condensed)
+9. [One-line OSI mapping (memory aid)](#-one-line-osi-mapping-memory-aid)
+10. [TCP vs UDP — Quick Comparison](#️-tcp-vs-udp--quick-comparison)
+11. [JioHotstar example](#-jiohotstar-example-interview-friendly)
+12. [TCP 3-Way Handshake](#-tcp-3-way-handshake-connection-setup)
+13. [HTTP vs HTTPS](#4️⃣-http-vs-https--difference-and-when-to-use)
+14. [Why is TCP/IP called a "compressed" OSI model?](#5️⃣-why-is-tcpip-called-a-compressed-osi-model-)
+
 ---
 
 ## 7️⃣ Application Layer — What you interact with

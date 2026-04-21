@@ -2,6 +2,20 @@
 
 📚 Quick, interview-friendly notes with real-life analogies and examples.
 
+## 📑 Table of Contents
+
+1. [What is a Network?](#1-what-is-a-network-)
+2. [Key Points Interviewers Expect](#2-key-points-interviewers-expect-)
+3. [Real-Life Analogies](#3-real-life-analogies-)
+4. [Private & Special IP Addresses](#4-private--special-ip-addresses-)
+5. [Network Address Translation (NAT)](#5-network-address-translation-nat-)
+6. [VPN — Types & Use Cases](#6-vpn--types--use-cases-)
+7. [LAN & WLAN](#7-lan--wlan-)
+8. [VLAN (Virtual LAN)](#8-vlan-virtual-lan-)
+9. [Subnetting (Why network + host?)](#9-subnetting-why-network--host-)
+10. [Real-Life Example: Postal Address Analogy](#10-real-life-example-postal-address-analogy-)
+11. [Quick Revision Card (one-liners)](#11-quick-revision-card-one-liners-)
+
 ---
 
 ## 1. What is a Network? 🌐
@@ -108,31 +122,6 @@ Benefits:
 - Provides basic isolation
 
 ---
-
-## 6. VPN — Types & Use Cases 🔒
-
-### a) Access VPN (Remote Access) 🧑‍💻
-- One user connects to company network using a VPN client (e.g., AnyConnect).
-- Use: Work from home.
-
-### b) Site-to-Site VPN 🏢
-- Connects two networks (office → office) over the internet.
-- Use: Branch connectivity (Hyderabad ↔ Mumbai).
-
-### c) Intranet VPN
-- Connects multiple offices of the same org into a single virtual network.
-
-### d) Extranet VPN
-- Allows partners/suppliers limited access to specific internal resources.
-
-| Feature | Access VPN | Site-to-Site VPN |
-|--------:|:----------:|:----------------:|
-| Connection | User → Network | Network → Network |
-| Device | VPN client | Router / firewall |
-| Authentication | Username / MFA | Pre-configured devices |
-| Use case | Remote user access | Branch office connectivity |
-
-### VPN Advantages ✅
 
 ## 6. VPN — Types & Use Cases 🔒
 
