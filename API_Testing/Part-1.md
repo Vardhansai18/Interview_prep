@@ -9,6 +9,11 @@
 6. [What is API Testing?](#what-is-api-testing)
 7. [What are the Advantages of API Testing?](#what-are-the-advantages-of-api-testing)
 8. [What are Common Protocols Used in API Testing?](#what-are-common-protocols-used-in-api-testing)
+9. [What is API Test Environment?](#what-is-api-test-environment)
+10. [What are the Principles of API Test Design?](#what-are-the-principles-of-api-test-design)
+11. [What are Common API Testing Types?](#what-are-common-api-testing-types)
+12. [What is the difference between API and REST API?](#what-is-the-difference-between-api-and-rest-api)
+13. [What is the difference between Authentication and Authorization?](#what-is-the-difference-between-authentication-and-authorization)
 
 ---
 
@@ -616,105 +621,123 @@ When you place an order:
 
 A company system searches UDDI registry to find available payment service APIs.
 
+---
 
-
-9)What is API Test Environment?
+## What is API Test Environment?
 
 An API test environment is a setup of server, database, and required configurations where APIs are deployed and tested without a GUI.
 
-🔹 Key Points to Mention in Interview
-1. Backend-Focused Environment (No UI)
+### 🔹 Key Points to Mention in Interview
+
+#### 1. Backend-Focused Environment (No UI)
 API testing happens without any frontend/UI.
 Interaction is through tools like Postman or code.
 
 👉 Real-life example:
 Testing:
 
+```http
 POST /login
+```
 
 directly via Postman instead of using a login webpage.
 
-2. Includes Server Setup
+#### 2. Includes Server Setup
 APIs are hosted on servers (local, staging, or production-like).
 You need proper endpoints (URLs) to test.
 
 👉 Real-life example:
 
+```
 https://staging.myapp.com/api/login
+```
 
 This staging server is used for testing before production.
 
-3. Database Configuration
+#### 3. Database Configuration
 API interacts with database → must be properly set up.
 Test data should be available or seeded.
 
 👉 Real-life example:
 After calling:
 
+```http
 POST /create-user
+```
 
 verify that the user is stored in the database.
 
-4. Environment Variables & Parameters
+#### 4. Environment Variables & Parameters
 Different environments use different configs:
-URLs
-Tokens
-API keys
+- URLs
+- Tokens
+- API keys
 
 👉 Real-life example:
 
+```
 Dev → dev.api.com
 QA → qa.api.com
 Prod → api.com
-5. Authentication & Authorization Setup
+```
+
+#### 5. Authentication & Authorization Setup
 APIs often require tokens, API keys, OAuth, etc.
 
 👉 Real-life example:
 
+```http
 Authorization: Bearer <token>
+```
 
 Without this, API should return 401 Unauthorized.
 
-6. Test Data Preparation
+#### 6. Test Data Preparation
 Need valid and invalid datasets for testing.
 
 👉 Real-life example:
 
-Valid user → success case
-Invalid password → failure case
-7. Dependency Handling (External Services)
+- Valid user → success case
+- Invalid password → failure case
+
+#### 7. Dependency Handling (External Services)
 APIs may depend on third-party services.
 Use mocks/stubs if services are unavailable.
 
 👉 Real-life example:
 Payment API depends on Stripe → mock it during testing.
 
-8. API Verification After Setup
+#### 8. API Verification After Setup
 Once environment is ready, validate:
-Response correctness
-Status codes
-Performance
+- Response correctness
+- Status codes
+- Performance
 
 👉 Real-life example:
 
+```http
 GET /users
+```
 
 Check:
 
-Status → 200
-Response time
-Correct JSON data
-9. Testing with Different Parameters
+- Status → 200
+- Response time
+- Correct JSON data
+
+#### 9. Testing with Different Parameters
 Same API is tested with multiple inputs.
 
 👉 Real-life example:
 
+```http
 GET /products?category=electronics
 GET /products?category=clothing
+```
 
 Validate different responses.
 
-10. Logging & Monitoring
+#### 10. Logging & Monitoring
 Logs help debug failures in API environment.
 
 👉 Real-life example:
@@ -748,107 +771,130 @@ is set up with different parameters to study the test results.
 
 API test environment is a backend setup with server, database, configurations, authentication, and dependencies where APIs are tested directly without a UI
 
+---
 
+## What are the Principles of API Test Design?
 
-9)  Principles of API Test Design
-1. Setup (Pre-conditions)
+### 1. Setup (Pre-conditions)
+
 Prepare everything required before executing the test:
-Test data
-Server readiness
-Authentication tokens
+- Test data
+- Server readiness
+- Authentication tokens
 Required objects/services
 
 👉 Real-life example:
 Before testing order creation:
 
+```http
 POST /login
+```
 
 Get auth token and ensure user + products exist in DB.
 
-2. Execution (Test Steps)
+### 2. Execution (Test Steps)
 Perform the actual API call with required inputs.
 Include request construction, headers, and logging.
 
 👉 Real-life example:
 
+```http
 POST /orders
 Authorization: Bearer <token>
 {
   "product_id": 101,
   "quantity": 2
 }
-3. Verification (Assertions)
+```
+
+### 3. Verification (Assertions)
 Validate the API response against expected results:
-Status codes
-Response body
-Business logic correctness
+- Status codes
+- Response body
+- Business logic correctness
 
 👉 Real-life example:
 
-Status → 201 Created
-Response contains order_id
-Total price calculation is correct
-4. Reporting (Result Status)
+- Status → 201 Created
+- Response contains order_id
+- Total price calculation is correct
+
+### 4. Reporting (Result Status)
 Capture and report test outcome:
-Pass
-Fail
-Blocked
+- Pass
+- Fail
+- Blocked
 
 👉 Real-life example:
 
-If status is 201 → Pass
-If status is 500 → Fail
-If API is down → Blocked
+- If status is 201 → Pass
+- If status is 500 → Fail
+- If API is down → Blocked
 
 Reports are usually generated in tools like CI/CD dashboards.
 
-5. Clean Up (Post-conditions)
+### 5. Clean Up (Post-conditions)
 Restore system to original state after test execution.
 Remove test data to avoid conflicts.
 
 👉 Real-life example:
 
+```http
 DELETE /orders/{order_id}
+```
 
 Delete the test order created during execution.
 
-🔹 End-to-End Example (Putting it all together)
+### 🔹 End-to-End Example (Putting it all together)
 
-👉 Scenario: Test Order API
+**👉 Scenario: Test Order API**
 
-Setup
-Create user
-Login → get token
-Execution
-Call POST /orders
-Verification
-Check 201 Created
-Validate response data
-Reporting
-Mark test as Pass/Fail
-Clean Up
-Delete created order
+1. **Setup**
+   - Create user
+   - Login → get token
 
+2. **Execution**
+   - Call POST /orders
 
-11)Common API Testing Types
-1. Validation Testing
+3. **Verification**
+   - Check 201 Created
+   - Validate response data
+
+4. **Reporting**
+   - Mark test as Pass/Fail
+
+5. **Clean Up**
+   - Delete created order
+
+---
+
+## What are Common API Testing Types?
+
+### 1. Validation Testing
+
 Ensures API meets basic correctness and expected behavior.
 Checks response structure, status codes, and data.
 
 👉 Example:
 
+```http
 GET /users/101
+```
 
 Verify:
 
-Status → 200 OK
-Response contains id, name
-2. Functional Testing
+- Status → 200 OK
+- Response contains id, name
+
+### 2. Functional Testing
+
 Validates business logic of the API.
 
 👉 Example:
 
+```http
 POST /apply-discount
+```
 
 Check if correct discount is applied based on rules.
 
@@ -862,13 +908,16 @@ POST /login
 
 Verify API supports UI functionality.
 
-4. Load Testing
+### 4. Load Testing
+
 Checks how API performs under heavy traffic.
 
 👉 Example:
 Simulate 1000 users calling:
 
+```http
 GET /products
+```
 
 Verify response time and stability.
 
@@ -890,49 +939,251 @@ GET /user/profile
 
 Without token → expect 401 Unauthorized.
 
-7. Penetration Testing
+### 7. Penetration Testing
+
 Simulates real-world attacks to find vulnerabilities.
 
 👉 Example:
 Try SQL Injection:
 
+```http
 POST /login
 {
   "username": "' OR 1=1 --",
   "password": "123"
 }
-8. Fuzz Testing
+```
+
+### 8. Fuzz Testing
+
 Sends random/invalid data to check robustness.
 
 👉 Example:
 
+```http
 POST /register
 {
   "username": "@@@###$$$",
   "age": -999
 }
+```
 
 API should handle gracefully (not crash).
 
-9. Interoperability & WS Compliance Testing
+### 9. Interoperability & WS Compliance Testing
+
 Ensures API works across:
-Different systems
-Protocol standards (REST/SOAP)
+- Different systems
+- Protocol standards (REST/SOAP)
 
 👉 Example:
 API should work correctly when accessed from:
 
-Web app
-Mobile app
-Third-party client
-🔹 Quick Summary Table
-Type	Purpose	Example
-Validation	Basic correctness	Check status & schema
-Functional	Business logic	Discount calculation
-UI	UI integration	Login button
-Load	Performance	1000 users
-Runtime	Stability	Repeated calls
-Security	Access control	Token validation
-Penetration	Attack simulation	SQL injection
-Fuzz	Invalid inputs	Random data
-Interoperability	Cross-system	Mobile + web
+- Web app
+- Mobile app
+- Third-party client
+
+### 🔹 Quick Summary Table
+
+| Type | Purpose | Example |
+|------|---------|---------|
+| Validation | Basic correctness | Check status & schema |
+| Functional | Business logic | Discount calculation |
+| UI | UI integration | Login button |
+| Load | Performance | 1000 users |
+| Runtime | Stability | Repeated calls |
+| Security | Access control | Token validation |
+| Penetration | Attack simulation | SQL injection |
+| Fuzz | Invalid inputs | Random data |
+| Interoperability | Cross-system | Mobile + web |
+
+---
+
+## What is the difference between API and REST API?
+
+### 🔹 What is an API?
+
+An API (Application Programming Interface) is a set of rules that allows two software systems to communicate.
+
+👉 It does not specify how communication should happen — it just defines what is possible.
+
+💡 Real-life example:
+
+Think of a restaurant waiter:
+
+- You (client) → give order
+- Waiter (API) → takes request to kitchen
+- Kitchen (server) → prepares food
+- Waiter → brings response back
+
+➡️ The waiter is the API
+
+### 🔹 What is a REST API?
+
+A REST API (Representational State Transfer API) is a type of API that follows specific rules (REST principles) using HTTP.
+
+👉 It is a standardized way of building APIs over the web
+
+💡 Real-life example:
+
+Same restaurant, but now with rules:
+
+- You must order using menu format
+- Use standard actions:
+  - GET → see menu
+  - POST → place order
+  - PUT → modify order
+  - DELETE → cancel order
+
+➡️ This structured system = REST API
+
+### 🔥 Key Difference (Simple Statement)
+
+👉 API = General concept  
+👉 REST API = API that follows REST rules using HTTP
+
+### 📊 Difference Table
+
+| Feature | API | REST API |
+|---------|-----|----------|
+| Definition | General interface for communication | API following REST principles |
+| Protocol | Any (HTTP, TCP, SOAP, etc.) | Only HTTP |
+| Structure | No strict rules | Strict architectural rules |
+| Data Format | Any (XML, JSON, Binary) | Mostly JSON (sometimes XML) |
+| Stateless | Not required | Must be stateless |
+| Scalability | Depends on design | Highly scalable |
+| Uniform Interface | Not required | Mandatory |
+| Performance | Varies | Optimized for web performance |
+| Example | OS API, Library API, SOAP API | Web services like login, payment APIs |
+
+### 🔧 Technical Example
+
+**API (Generic)**
+
+```python
+# Python library API
+import math
+math.sqrt(16)
+```
+
+➡️ This is also an API — no HTTP involved
+
+**REST API**
+
+```http
+GET /users/123
+POST /users
+PUT /users/123
+DELETE /users/123
+```
+
+➡️ Uses HTTP methods + URLs → REST API
+
+### 🎯 Real Industry Example
+
+**Without REST (Generic API)**
+
+A banking system using custom TCP protocol
+
+**With REST**
+
+Payment API:
+
+```http
+GET /balance
+POST /transfer
+```
+
+Used in:
+
+- Mobile apps
+- Web apps
+- Microservices
+
+### 🧠 Interview One-Liner
+
+👉 "All REST APIs are APIs, but not all APIs are REST APIs."
+
+
+---
+
+## What is the difference between Authentication and Authorization?
+
+### 📊 Comparison Table
+
+| Aspect | Authentication | Authorization |
+|--------|----------------|---------------|
+| Definition | Verifies who you are | Determines what you can access |
+| Question Answered | "Are you a valid user?" | "What are you allowed to do?" |
+| Happens When | First step (login) | After authentication |
+| Input | Username, password, OTP, biometrics | Roles, permissions, access rules |
+| Output | Identity confirmed | Access granted/denied |
+| Example Status Code | 401 Unauthorized | 403 Forbidden |
+
+### 🔹 1. Authentication (Identity Verification)
+
+**Confirms the user's identity**
+
+Uses credentials like:
+- Username & password
+- OTP
+- Biometrics
+
+👉 **Real-life example:**
+
+When you log into your email:
+
+```http
+POST /login
+```
+
+- Correct credentials → ✅ user is authenticated
+- Wrong credentials → ❌ access denied
+
+### 🔹 2. Authorization (Access Control)
+
+**Decides what the authenticated user can do**
+
+Based on:
+- Roles (admin, user)
+- Permissions
+
+👉 **Real-life example:**
+
+After login:
+
+```http
+GET /admin/dashboard
+```
+
+- Admin → ✅ access allowed
+- Normal user → ❌ 403 Forbidden
+
+### 🔹 Simple Flow (Very Important for Interview)
+
+**Authentication**
+- Verify identity → user logs in
+
+**Authorization**
+- Check permissions → allow/deny access
+
+### 🔹 Real-Life Analogy (Easy to Explain)
+
+**👉 Office Building Example**
+
+- **Authentication** = Showing your ID card at the gate
+- **Authorization** = Access to specific rooms (HR room, server room)
+
+### 🔹 API Example
+
+```http
+GET /user/profile
+Authorization: Bearer <token>
+```
+
+- Token validity → Authentication
+- Access to resource → Authorization
+
+### 🔹 One-Line Interview Answer
+
+"Authentication verifies who the user is, while authorization determines what the user is allowed to do."
