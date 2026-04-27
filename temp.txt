@@ -1,0 +1,6 @@
+1) introduce a feature to the Driver Portal App
+lets say if he start his day to collect the waste from one place to all other 
+places the driver should get the iternariy of the google maps
+where he should collect the waste and after collecting it should mark it as collected in the google maps 
+
+can you plz implement this feature 

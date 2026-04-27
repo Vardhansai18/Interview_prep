@@ -1,0 +1,21 @@
+| Problem | Solution |
+|--------|----------|
+| [Two Sum](https://leetcode.com/problems/two-sum/) | <details><summary>View Code</summary>See below</details> |
+
+---
+
+### Two Sum
+
+```cpp
+class Solution {
+public:
+    vector<int> twoSum(vector<int>& nums, int target) {
+        unordered_map<int,int> m;
+        for(int i=0;i<nums.size();i++){
+            int diff = target - nums[i];
+            if(m.count(diff)) return {m[diff], i};
+            m[nums[i]] = i;
+        }
+        return {};
+    }
+};
