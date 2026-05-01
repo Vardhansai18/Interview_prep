@@ -75,10 +75,10 @@ It answers:
 #### Step 1: Identify Components (from HLD) 
 
 HLD
-![alt text](image.png)
+![alt text](images/image.png)
 
 LLD
-![alt text](image-1.png)
+![alt text](images/image-1.png)
 
 **Example:**
 - User Service
@@ -125,7 +125,7 @@ public:
 
 
 
-![alt text](image-2.png)
+![alt text](images/image-2.png)
 
 ---
 
@@ -269,4 +269,4 @@ Don't jump directly to classes.
 
 
 UML Diagrams:
-![alt text](image-3.png)
+![alt text](images/image-3.png)
