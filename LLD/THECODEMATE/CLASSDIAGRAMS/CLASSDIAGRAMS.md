@@ -133,7 +133,7 @@ class Bank {
 private:
     std::vector<Customer*> customers; // Customer objects can exist independently
 public:
-    void addCustomer(Customer* customer) {
+    void addCustomer(Customer* customer) { 
         customers.push_back(customer);
     }
 };
