@@ -10,6 +10,10 @@
 
 ---
 
+**Parking Lot Excalidraw Diagram:** [View Diagram](https://excalidraw.com/#json=cmikYe5mtxYLeQc11lX7x,MSg2udUCeedyuUVcVXqq1A)
+
+---
+
 ## 1. Clarify (Requirements)
 
 ### Functional Requirements
