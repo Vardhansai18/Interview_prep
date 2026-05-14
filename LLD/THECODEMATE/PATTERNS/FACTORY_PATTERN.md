@@ -1,4 +1,20 @@
+
 # Factory Pattern
+
+## 📑 Table of Contents
+- [📋 Overview](#-overview)
+- [❌ BEFORE Factory Pattern (Without Factory)](#-before-factory-pattern-without-factory)
+- [✅ AFTER Factory Pattern](#-after-factory-pattern)
+- [🔄 Main Difference](#-main-difference)
+- [🚀 Future Advantage Example](#-future-advantage-example)
+- [🧠 Real Understanding](#-real-understanding)
+- [📊 Visual Comparison](#-visual-comparison)
+- [🎯 Modern C++ Version (Recommended)](#-modern-c-version-recommended)
+- [📝 Key Takeaways](#-key-takeaways)
+- [🎓 When to Use Factory Pattern](#-when-to-use-factory-pattern)
+- [🔗 Related Patterns](#-related-patterns)
+
+---
 
 ## 📋 Overview
 
@@ -13,7 +29,7 @@ The **Factory Pattern** is a **Creational Design Pattern**.
 
 ### The Problem
 
-![Factory Pattern Problem - Tight Coupling](images/image.png)
+![Factory Pattern Problem - Tight Coupling](../images/image.png)
 
 When client directly creates objects, it becomes **tightly coupled** with:
 - `Car`
@@ -99,7 +115,7 @@ Client (Knows Everything ❌)
 
 ## ✅ AFTER Factory Pattern
 
-![Factory Pattern Solution - Loose Coupling](images/image-1.png)
+![Factory Pattern Solution - Loose Coupling](../images/image-1.png)
 
 ### The Solution
 
