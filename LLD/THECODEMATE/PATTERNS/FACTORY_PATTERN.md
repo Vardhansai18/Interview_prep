@@ -23,6 +23,9 @@ The **Factory Pattern** is a **Creational Design Pattern**.
 ### Purpose
 > Create objects **without exposing** the exact object creation logic to the client.
 
+### 🎨 UML Diagram
+> 📐 [**View Interactive UML Diagram on Excalidraw**](https://excalidraw.com/#room=afffc96cc2cdf9edc0cd,DrNeOY9-Dw6RYHsfynsrUw)
+
 ---
 
 ## ❌ BEFORE Factory Pattern (Without Factory)

@@ -1,6 +1,6 @@
 # Observer Pattern
 
-## � Table of Contents
+## 📑 Table of Contents
 - [📋 Overview](#-overview)
 - [🎬 Real Life Example: YouTube Channel](#-real-life-example-youtube-channel)
 - [🧩 Core Components](#-core-components)
@@ -22,7 +22,7 @@
 
 ---
 
-## �📋 Overview
+## 📋 Overview
 
 The **Observer Pattern** is a **Behavioral Design Pattern**.
 
@@ -30,6 +30,9 @@ The **Observer Pattern** is a **Behavioral Design Pattern**.
 > One object (called **Subject**) automatically notifies multiple dependent objects (called **Observers**) whenever its state changes.
 
 **Creates a one-to-many dependency** between objects.
+
+### 🎨 UML Diagram
+> 📐 [**View Interactive UML Diagram on Excalidraw**](https://excalidraw.com/#room=c10c8a6b8434080055db,PYjmLJ_zbwlJZVoOsAB9oA)
 
 ---
 
