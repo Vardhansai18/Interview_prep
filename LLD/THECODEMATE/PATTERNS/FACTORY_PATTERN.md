@@ -13,6 +13,8 @@ The **Factory Pattern** is a **Creational Design Pattern**.
 
 ### The Problem
 
+![Factory Pattern Problem - Tight Coupling](../images/image.png)
+
 When client directly creates objects, it becomes **tightly coupled** with:
 - `Car`
 - `Bike`
@@ -96,6 +98,8 @@ Client (Knows Everything ❌)
 ---
 
 ## ✅ AFTER Factory Pattern
+
+![Factory Pattern Solution - Loose Coupling](/images/image-1.png)
 
 ### The Solution
 
