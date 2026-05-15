@@ -2,6 +2,7 @@
 
 ## 📑 Table of Contents
 - [📋 Overview](#-overview)
+  - [🎨 UML Diagram](#-uml-diagram)
 - [🎬 Real Life Example: YouTube Channel](#-real-life-example-youtube-channel)
 - [🧩 Core Components](#-core-components)
 - [💼 Real Software Example](#-real-software-example)

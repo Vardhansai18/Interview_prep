@@ -3,6 +3,7 @@
 
 ## 📑 Table of Contents
 - [📋 Overview](#-overview)
+  - [🎨 UML Diagram](#-uml-diagram)
 - [❌ BEFORE Factory Pattern (Without Factory)](#-before-factory-pattern-without-factory)
 - [✅ AFTER Factory Pattern](#-after-factory-pattern)
 - [🔄 Main Difference](#-main-difference)

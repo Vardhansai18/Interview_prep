@@ -4,75 +4,74 @@ using namespace std;
 typedef long long ll;
 typedef unsigned long long ull;
 
-class Vechile{
-    public:
-    virtual void drive()
-    {
-        cout << "Vechile Drive" << endl;
+class PaymentStrategy{
+public:
+    virtual void Pay(int amount){
+        cout << "default Payment" << endl;
+    }
+};
+
+class UpiPayment : public PaymentStrategy{
+public:
+    void Pay(int amount) override {
+        cout << "UPI Payment of " << amount << " amount"  << endl;
+    }
+};
+
+class CashPayment : public PaymentStrategy{
+public:
+    void Pay( int amount ) override {
+        cout << "Cash Payment " << amount << " amount"  << endl;
+    }
+};
+
+class CardPayment : public PaymentStrategy{
+public:
+    void Pay( int amount ) override {
+        cout << "Card Payment "<< amount << " amount"  << endl;
     }
 };
 
 
-
-
-class Car: public Vechile{
+class PaymentService{
     public:
-    void drive() override
+    PaymentStrategy* strategy;
+
+    PaymentService( PaymentStrategy* strategy )
     {
-        cout << "Car Drive" << endl;
-    }
-};
-
-
-class Bus: public Vechile{
-    public:
-    void drive()
-    {
-        cout << "Bus Drive" << endl;
-    }
-};
-
-
-class Bike: public Vechile{
-    public:
-    void drive()
-    {
-        cout << "Bike Drive" << endl;
-    }
-};
-
-class VechileFactory{
-    public:
-    Vechile* createVechile( string type )
-    {
-        if( type == "car" )
-        {
-            return new Car();
-        }
-        else if( type == "bike" )
-        {
-            return new Bike();
-        }
-        else if( type == "Bus" )
-        {
-            return new Bus();
-        }
-        return nullptr;
+        this->strategy = strategy;
     }
 
-};
+    void setStrategy(PaymentStrategy* strategy  )
+    {
+        this->strategy = strategy;
+    }
 
+    void makePayment( int amount )
+    {
+        strategy->Pay( amount );
+    }
+};
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    VechileFactory factory;
+    CardPayment* cardPayment = new CardPayment();
 
-    Vechile *bus1 = factory.createVechile("Bus");
-    bus1->drive();
+    UpiPayment* upiPayment = new UpiPayment();
 
     
+    PaymentService* paymentService = new PaymentService(cardPayment);
+
+    paymentService->makePayment( 100 );
+
+    paymentService->setStrategy( upiPayment );
+
+    paymentService->makePayment( 200 );
+
+
+
 
     return 0;
 }
