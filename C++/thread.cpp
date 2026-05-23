@@ -1,77 +1,46 @@
-#include <bits/stdc++.h>
+#include <iostream>
 using namespace std;
 
-typedef long long ll;
-typedef unsigned long long ull;
-
-class PaymentStrategy{
+// Base class
+class Payment {
 public:
-    virtual void Pay(int amount){
-        cout << "default Payment" << endl;
+    virtual void pay() {
+        cout << "Processing generic payment\n";
     }
 };
 
-class UpiPayment : public PaymentStrategy{
+// Derived class 1
+class CreditCard : public Payment {
 public:
-    void Pay(int amount) override {
-        cout << "UPI Payment of " << amount << " amount"  << endl;
+    void pay() override {   // 👈 override
+        cout << "Payment done using Credit Card\n";
     }
 };
 
-class CashPayment : public PaymentStrategy{
+// Derived class 2
+class UPI : public Payment {
 public:
-    void Pay( int amount ) override {
-        cout << "Cash Payment " << amount << " amount"  << endl;
+    void pay() override {   // 👈 override
+        cout << "Payment done using UPI\n";
     }
 };
 
-class CardPayment : public PaymentStrategy{
+class DebitCard : public Payment {
 public:
-    void Pay( int amount ) override {
-        cout << "Card Payment "<< amount << " amount"  << endl;
-    }
-};
-
-
-class PaymentService{
-    public:
-    PaymentStrategy* strategy;
-
-    PaymentService( PaymentStrategy* strategy )
-    {
-        this->strategy = strategy;
-    }
-
-    void setStrategy(PaymentStrategy* strategy  )
-    {
-        this->strategy = strategy;
-    }
-
-    void makePayment( int amount )
-    {
-        strategy->Pay( amount );
+    void pay() override {   // 👈 override
+        cout << "Payment done using Credit Card\n";
     }
 };
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    Payment* p1 = new CreditCard();
+    Payment* p2 = new UPI();
 
-    CardPayment* cardPayment = new CardPayment();
+    p1->pay();  // CreditCard version
+    p2->pay();  // UPI version
 
-    UpiPayment* upiPayment = new UpiPayment();
-
-    
-    PaymentService* paymentService = new PaymentService(cardPayment);
-
-    paymentService->makePayment( 100 );
-
-    paymentService->setStrategy( upiPayment );
-
-    paymentService->makePayment( 200 );
-
-
-
+    delete p1;
+    delete p2;
 
     return 0;
 }
