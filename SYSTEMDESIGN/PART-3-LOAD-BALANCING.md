@@ -8,13 +8,13 @@ A Load Balancer is a device or software that distributes incoming network traffi
 
 Imagine our bookstore experiencing a surge of customers during a holiday sale. If only one cashier is available, the line will grow long, and customers will become frustrated. To handle the increased load, we could add more cashiers and distribute customers evenly among them. This way, no single cashier is overwhelmed, and customers are served more efficiently.
 
-![Bookstore Load Balancing Example](PART-3-LOAD-BALANCING/image.png)
+![Bookstore Load Balancing Example](IMAGES/PART-3-LOAD-BALANCING/image.png)
 
 ### How it Relates to Web Applications
 
 In a web application, a load balancer distributes incoming requests across multiple servers. This ensures that no single server handles too many requests, which could slow down the application or cause it to crash. By distributing the load, the application remains responsive and reliable.
 
-![Web Application Load Balancing](PART-3-LOAD-BALANCING/image-1.png)
+![Web Application Load Balancing](IMAGES/PART-3-LOAD-BALANCING/image-1.png)
 
 ## Load Balancing Algorithms
 
@@ -26,7 +26,7 @@ Load balancers use various algorithms to decide how to distribute incoming traff
 - **Pros:** Balances load more efficiently, especially with varying server capacities.
 - **Cons:** Can lead to uneven distribution if not managed properly.
 
-![Least Connections Algorithm](PART-3-LOAD-BALANCING/image-2.png)
+![Least Connections Algorithm](IMAGES/PART-3-LOAD-BALANCING/image-2.png)
 
 ### 2. Round Robin
 
@@ -34,7 +34,7 @@ Load balancers use various algorithms to decide how to distribute incoming traff
 - **Pros:** Simple and effective for equally powerful servers.
 - **Cons:** Does not account for server load or capacity.
 
-![Round Robin Algorithm](PART-3-LOAD-BALANCING/image-3.png)
+![Round Robin Algorithm](IMAGES/PART-3-LOAD-BALANCING/image-3.png)
 
 **Note on Round Robin Limitations:**
 
@@ -54,7 +54,7 @@ This algorithm distributes traffic based on server weights, allowing more powerf
 - **Pros:** Ensures that requests from the same client go to the same server (session persistence).
 - **Cons:** Can cause uneven load distribution if client requests are not evenly distributed.
 
-![IP Hash Algorithm](PART-3-LOAD-BALANCING/image-4.png)
+![IP Hash Algorithm](IMAGES/PART-3-LOAD-BALANCING/image-4.png)
 
 **Real-World Example:**
 
@@ -66,7 +66,7 @@ The IP Hash method can help route premium users to their dedicated servers based
 
 ## Advantages of Load Balancing
 
-![Advantages of Load Balancing](PART-3-LOAD-BALANCING/image-5.png)
+![Advantages of Load Balancing](IMAGES/PART-3-LOAD-BALANCING/image-5.png)
 
 ### Key Benefits:
 
@@ -82,7 +82,7 @@ The IP Hash method can help route premium users to their dedicated servers based
 
 ## Disadvantages of Load Balancing
 
-![Disadvantages of Load Balancing](PART-3-LOAD-BALANCING/image-6.png)
+![Disadvantages of Load Balancing](IMAGES/PART-3-LOAD-BALANCING/image-6.png)
 
 ### Key Challenges:
 

@@ -31,7 +31,7 @@ In our bookstore example:
 - **Client:** The customer who walks into the store and wants to buy a book. They request information or services, such as the price of a book or the total cost of their purchase.
 - **Server:** The cashier who processes the customer's requests. The cashier looks up book prices, calculates totals, and completes the sale. The customer does not need to know the internal workings of the bookstore's inventory system; they only interact with the cashier to get what they need.
 
-![Bookstore Client-Server Model](PART-2-CLIENT-SERVER/image.png)
+![Bookstore Client-Server Model](IMAGES/PART-2-CLIENT-SERVER/image.png)
 
 ## Web Application Example
 
@@ -40,7 +40,7 @@ When you use your web browser to access a website:
 - **Client:** Your web browser, which sends an HTTP request to the web server.
 - **Server:** The web server, which processes the request, retrieves the necessary data from a database, and sends back the web page to your browser.
 
-![Web Application Client-Server Model](PART-2-CLIENT-SERVER/image-1.png)
+![Web Application Client-Server Model](IMAGES/PART-2-CLIENT-SERVER/image-1.png)
 
 ## Interaction Process
 
@@ -66,11 +66,11 @@ The interaction between a client and server can be broken down into the followin
 
 ### Gaming Server
 
-![Gaming Server Example](PART-2-CLIENT-SERVER/image-2.png)
+![Gaming Server Example](IMAGES/PART-2-CLIENT-SERVER/image-2.png)
 
 ### Mail Server
 
-![Mail Server Example](PART-2-CLIENT-SERVER/image-3.png)
+![Mail Server Example](IMAGES/PART-2-CLIENT-SERVER/image-3.png)
 
 ## Advantages of the Client-Server Model
 
@@ -82,7 +82,7 @@ Servers centralize the business logic, making it easier to maintain and update t
 
 If we make changes at the centralized system, it will be reflected to all the clients:
 
-![Central Resource Management](PART-2-CLIENT-SERVER/image-4.png)
+![Central Resource Management](IMAGES/PART-2-CLIENT-SERVER/image-4.png)
 
 ### 2. Scalability
 
@@ -90,11 +90,11 @@ Clients can be easily added or removed without significantly affecting the serve
 
 If more customers come:
 
-![Scalability](PART-2-CLIENT-SERVER/image-5.png)
+![Scalability](IMAGES/PART-2-CLIENT-SERVER/image-5.png)
 
 ### 3. Flexibility to Reach
 
-![Flexibility to Reach](PART-2-CLIENT-SERVER/image-6.png)
+![Flexibility to Reach](IMAGES/PART-2-CLIENT-SERVER/image-6.png)
 
 ### 4. Security
 
@@ -108,7 +108,7 @@ If the salesman is absent or if the service is down, the entire system becomes u
 
 **Solution:** Implement backup devices or backup personnel.
 
-![Single Point of Failure](PART-2-CLIENT-SERVER/image-7.png)
+![Single Point of Failure](IMAGES/PART-2-CLIENT-SERVER/image-7.png)
 
 ### 2. Network Congestion
 
@@ -116,7 +116,7 @@ If more people connect to the system, the application will be slow.
 
 **Solution:** Deploy the application in more places (distributed architecture).
 
-![Network Congestion](PART-2-CLIENT-SERVER/image-8.png)
+![Network Congestion](IMAGES/PART-2-CLIENT-SERVER/image-8.png)
 
 ### 3. Security Risks
 
@@ -124,4 +124,4 @@ Centralized systems can be targets for security attacks.
 
 **Solution:** Implement robust security protocols and measures.
 
-![Security Risks](PART-2-CLIENT-SERVER/image-9.png)
+![Security Risks](IMAGES/PART-2-CLIENT-SERVER/image-9.png)

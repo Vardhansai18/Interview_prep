@@ -15,10 +15,10 @@ The CAP theorem states that a distributed system can only guarantee **two out of
 - **Partition Tolerance:**
   The system should be functional even if one partition is disconnected.
 
-![CAP Theorem Properties](PART-10-CAP-THEOREM/image.png)
+![CAP Theorem Properties](IMAGES/PART-10-CAP-THEOREM/image.png)
 
 ---
 
 ## CAP Theorem
 
-![CAP Theorem](PART-10-CAP-THEOREM/image-1.png)
+![CAP Theorem](IMAGES/PART-10-CAP-THEOREM/image-1.png)

@@ -6,11 +6,11 @@ Caching is a technique where systems store frequently accessed data in a tempora
 
 In our bookstore example, think of the "Bestseller" section near the entrance. This section contains the most popular books that customers frequently ask for. Instead of having customers search through the entire store, they can easily find bestsellers in one convenient location. By keeping these popular books readily available, the store improves customer satisfaction and speeds up the shopping process.
 
-![Caching Bookstore Example](PART-4-CACHING/image-1.png)
+![Caching Bookstore Example](IMAGES/PART-4-CACHING/image-1.png)
 
 > RAM is a kind of memory — if we increase the RAM, the speed will be increased and performance will be improved, but should not increase it too large.
 
-![RAM and Performance](PART-4-CACHING/image-2.png)
+![RAM and Performance](IMAGES/PART-4-CACHING/image-2.png)
 
 ---
 
@@ -23,13 +23,13 @@ In a web application, caching works similarly by storing frequently accessed dat
 
 ### If client asks for the breaking news:
 
-![Cache Hit Flow](PART-4-CACHING/image-3.png)
+![Cache Hit Flow](IMAGES/PART-4-CACHING/image-3.png)
 
-![Cache Miss Flow](PART-4-CACHING/image-4.png)
+![Cache Miss Flow](IMAGES/PART-4-CACHING/image-4.png)
 
 ### If there is a breaking news: remove article 5
 
-![Cache Eviction Example](PART-4-CACHING/image-5.png)
+![Cache Eviction Example](IMAGES/PART-4-CACHING/image-5.png)
 
 ---
 
@@ -49,7 +49,7 @@ Randomly removing the articles in the cache.
 - **Pros:** Easy to understand and implement.
 - **Cons:** May remove frequently accessed data that entered the cache early.
 
-![FIFO Step 1](PART-4-CACHING/image-6.png) → ![FIFO Step 2](PART-4-CACHING/image-7.png) → ![FIFO Step 3](PART-4-CACHING/image-8.png)
+![FIFO Step 1](IMAGES/PART-4-CACHING/image-6.png) → ![FIFO Step 2](IMAGES/PART-4-CACHING/image-7.png) → ![FIFO Step 3](IMAGES/PART-4-CACHING/image-8.png)
 
 ### 3) LFU — Least Frequently Used
 
@@ -57,7 +57,7 @@ Randomly removing the articles in the cache.
 - **Pros:** Keeps frequently accessed data in the cache.
 - **Cons:** Requires tracking access frequency, which can add overhead.
 
-![LFU Step 1](PART-4-CACHING/image-9.png) → ![LFU Step 2](PART-4-CACHING/image-10.png)
+![LFU Step 1](IMAGES/PART-4-CACHING/image-9.png) → ![LFU Step 2](IMAGES/PART-4-CACHING/image-10.png)
 
 ### 4) LRU — Least Recently Used
 
@@ -71,7 +71,7 @@ Randomly removing the articles in the cache.
 
 > If an article is updated in the DB, update it in the cache also — otherwise it will be a problem.
 
-![Cache Consistency Issue](PART-4-CACHING/image-11.png)
+![Cache Consistency Issue](IMAGES/PART-4-CACHING/image-11.png)
 
 1. **Consistency of Resources** — Cached data must stay in sync with the source of truth.
 2. **Coherence** — If the server is deployed in multiple places, and the cache is also present there, all caches should remain the same.

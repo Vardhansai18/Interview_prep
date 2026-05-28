@@ -19,7 +19,7 @@ Let's say we want to build an application that should be accessible to everyone 
 - Upload the application to a **server**
 - One client asks for the site, another client asks for the API call
 
-![Client-Server Model](PART-6-CREATING-DIAGRAMS/image.png)
+![Client-Server Model](IMAGES/PART-6-CREATING-DIAGRAMS/image.png)
 
 ---
 
@@ -27,7 +27,7 @@ Let's say we want to build an application that should be accessible to everyone 
 
 Now the client wants to store information, so we introduce a concept called **Database**. The server can connect to the database to write and read data.
 
-![Database Introduction](PART-6-CREATING-DIAGRAMS/image-1.png)
+![Database Introduction](IMAGES/PART-6-CREATING-DIAGRAMS/image-1.png)
 
 ---
 
@@ -35,7 +35,7 @@ Now the client wants to store information, so we introduce a concept called **Da
 
 If a lot of users want to access the application, one server can't handle the traffic — so we introduce multiple servers.
 
-![Multiple Servers](PART-6-CREATING-DIAGRAMS/image-2.png)
+![Multiple Servers](IMAGES/PART-6-CREATING-DIAGRAMS/image-2.png)
 
 **Problem:** If users are only accessing the application from one server, how can this be handled?
 
@@ -43,7 +43,7 @@ If a lot of users want to access the application, one server can't handle the tr
 
 Here comes **Load Balancing** — distributing traffic across multiple servers.
 
-![Load Balancing](PART-6-CREATING-DIAGRAMS/image-3.png)
+![Load Balancing](IMAGES/PART-6-CREATING-DIAGRAMS/image-3.png)
 
 ---
 
@@ -56,9 +56,9 @@ What if the database goes down? The entire system goes down. To handle this:
 - **Writing** → goes to the Master DB
 - **Reading** → goes from the Slave DB
 
-![Master-Slave DB Setup](PART-6-CREATING-DIAGRAMS/image-4.png)
+![Master-Slave DB Setup](IMAGES/PART-6-CREATING-DIAGRAMS/image-4.png)
 
-![Master-Slave DB Detail](PART-6-CREATING-DIAGRAMS/image-5.png)
+![Master-Slave DB Detail](IMAGES/PART-6-CREATING-DIAGRAMS/image-5.png)
 
 ---
 
@@ -72,10 +72,10 @@ When repetitive requests are being made to the server, instead of fetching from 
 
 ## Step 6: Data Centers
 
-![Data Centers](PART-6-CREATING-DIAGRAMS/image-6.png)
+![Data Centers](IMAGES/PART-6-CREATING-DIAGRAMS/image-6.png)
 
 ---
 
 ## Simplified Diagram
 
-![Simplified Architecture Diagram](PART-6-CREATING-DIAGRAMS/image-7.png)
+![Simplified Architecture Diagram](IMAGES/PART-6-CREATING-DIAGRAMS/image-7.png)

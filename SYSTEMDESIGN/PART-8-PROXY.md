@@ -22,11 +22,11 @@ Without a proxy, the client (the person requesting the book) establishes a direc
 
 In a real-world scenario, imagine if every customer at the bookstore had direct access to the warehouse. It would lead to chaos, with people wandering around, possibly damaging items or getting lost, and creating bottlenecks.
 
-![Connection without a Proxy](PART-8-PROXY/image.png)
+![Connection without a Proxy](IMAGES/PART-8-PROXY/image.png)
 
 ### A Typical Connection
 
-![A typical connection](PART-8-PROXY/image-1.png)
+![A typical connection](IMAGES/PART-8-PROXY/image-1.png)
 
 ---
 
@@ -34,7 +34,7 @@ In a real-world scenario, imagine if every customer at the bookstore had direct 
 
 A forward proxy sits between the client and the server, forwarding the client's requests to the server and returning the server's responses to the client. It essentially acts on behalf of the client, masking the client's identity from the server.
 
-![Forward Proxy](PART-8-PROXY/image-2.png)
+![Forward Proxy](IMAGES/PART-8-PROXY/image-2.png)
 
 ### Benefits of Forward Proxy
 
@@ -59,7 +59,7 @@ A reverse proxy sits in front of the server, intercepting client requests and fo
 - **SSL Termination:** Reverse proxies can handle encryption and decryption for SSL (HTTPS) traffic, reducing the load on the backend servers.
 - **Working from Home Example:** When you work from home, you often connect to your company's network through a reverse proxy. This routes your requests to the correct server within the company's internal network, ensuring that your communication is secure and that external users can't directly access the company's servers.
 
-![Reverse Proxy](PART-8-PROXY/image-3.png)
+![Reverse Proxy](IMAGES/PART-8-PROXY/image-3.png)
 
 ---
 

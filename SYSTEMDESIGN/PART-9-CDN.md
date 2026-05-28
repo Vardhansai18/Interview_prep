@@ -21,7 +21,7 @@ Let's relate this to our bookstore analogy. Imagine there's a high demand for a 
 - **Consumer:**
   The consumer is responsible for processing the messages.
 
-![Message Queue Components](PART-9-CDN/image.png)
+![Message Queue Components](IMAGES/PART-9-CDN/image.png)
 
 ---
 

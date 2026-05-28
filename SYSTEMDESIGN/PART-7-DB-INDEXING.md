@@ -12,17 +12,17 @@ Let's go back to our bookstore analogy. Imagine you want to find a particular bo
 
 ### Bookstore without an index
 
-![Bookstore without an index](PART-7-DB-INDEXING/image-1.png)
+![Bookstore without an index](IMAGES/PART-7-DB-INDEXING/image-1.png)
 
 ### Bookstore with an index
 
-![Bookstore with an index](PART-7-DB-INDEXING/image-2.png)
+![Bookstore with an index](IMAGES/PART-7-DB-INDEXING/image-2.png)
 
 ---
 
 ## A Basic Scenario
 
-![Basic scenario](PART-7-DB-INDEXING/image-3.png)
+![Basic scenario](IMAGES/PART-7-DB-INDEXING/image-3.png)
 
 Without indexing, you need to scan line by line for every query.
 
@@ -30,7 +30,7 @@ Without indexing, you need to scan line by line for every query.
 
 An index table acts like a Map to store the memory address:
 
-![Index table as a Map](PART-7-DB-INDEXING/image-4.png)
+![Index table as a Map](IMAGES/PART-7-DB-INDEXING/image-4.png)
 
 The indexing is implemented by **B-trees** — all of the values smaller than a node will reside on the left side, and the others on the right side.
 
@@ -50,7 +50,7 @@ In databases, there are several types of indexes that help structure and optimiz
 
 The system creates a primary index on the **primary key** of a table, which uniquely identifies each record.
 
-![Primary Index](PART-7-DB-INDEXING/image-5.png)
+![Primary Index](IMAGES/PART-7-DB-INDEXING/image-5.png)
 
 > The primary index can be a date.
 
@@ -58,9 +58,9 @@ The system creates a primary index on the **primary key** of a table, which uniq
 
 A secondary index is created on **non-primary key columns**, allowing you to search based on fields other than the primary key.
 
-![Secondary Indexing - 1](PART-7-DB-INDEXING/image-6.png)
+![Secondary Indexing - 1](IMAGES/PART-7-DB-INDEXING/image-6.png)
 
-![Secondary Indexing - 2](PART-7-DB-INDEXING/image-7.png)
+![Secondary Indexing - 2](IMAGES/PART-7-DB-INDEXING/image-7.png)
 
 ### 3. Composite Index
 
@@ -68,13 +68,13 @@ A composite index is an index that involves **multiple columns**. It's useful wh
 
 **Example:** Filtering Amazon products
 
-![Composite Index - Amazon products](PART-7-DB-INDEXING/image-8.png)
+![Composite Index - Amazon products](IMAGES/PART-7-DB-INDEXING/image-8.png)
 
 ### 4. Hash Index
 
 A hash index uses a **hash function** to convert the index values into a specific address in memory. This type of index is very efficient for equality searches but less effective for range-based queries.
 
-![Hash Index](PART-7-DB-INDEXING/image-9.png)
+![Hash Index](IMAGES/PART-7-DB-INDEXING/image-9.png)
 
 ---
 
@@ -91,4 +91,4 @@ While indexing improves query performance, it also introduces a few challenges t
 - **Complexity of Managing Indexes:**
   As the number of indexes grows, the database becomes harder to manage. Too many indexes can slow down the system, as every write operation needs to update all relevant indexes.
 
-![Challenges of Indexing](PART-7-DB-INDEXING/image-10.png)
+![Challenges of Indexing](IMAGES/PART-7-DB-INDEXING/image-10.png)

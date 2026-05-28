@@ -4,13 +4,13 @@
 
 Looking at our bookstore again:
 
-![Bookstore Overview](PART-5-DATA-BASE/image.png)
+![Bookstore Overview](IMAGES/PART-5-DATA-BASE/image.png)
 
 As the books increase, how can we store all the information of the books? Using a **Ledger** (something to manage data).
 
 In our bookstore example, think of a database as the ledger where the system records all book transactions. This ledger keeps track of the inventory, sales, customer details, and more. Every time a book is sold, the system makes a new entry, updates the stock, and records the sale. This helps the bookstore maintain an accurate record of all its operations.
 
-![Database as a Ledger](PART-5-DATA-BASE/image-1.png)
+![Database as a Ledger](IMAGES/PART-5-DATA-BASE/image-1.png)
 
 ---
 
@@ -40,7 +40,7 @@ Databases can handle complex queries that involve multiple tables and relationsh
 
 > **Bookstore Example:** Generating a sales report for a particular genre or author over a specific time period.
 
-![Database Advantages](PART-5-DATA-BASE/image-2.png)
+![Database Advantages](IMAGES/PART-5-DATA-BASE/image-2.png)
 
 ---
 
@@ -50,19 +50,19 @@ Databases can handle complex queries that involve multiple tables and relationsh
 
 As the amount of data grows, scaling a database can become challenging. Databases must be designed to handle increasing loads without compromising performance.
 
-![Scalability Challenge](PART-5-DATA-BASE/image-4.png)
+![Scalability Challenge](IMAGES/PART-5-DATA-BASE/image-4.png)
 
 ### 2. Consistency
 
 Maintaining consistency across distributed databases can be difficult. When the system replicates data across multiple locations, ensuring that all copies are updated simultaneously becomes challenging.
 
-![Consistency Challenge](PART-5-DATA-BASE/image-5.png)
+![Consistency Challenge](IMAGES/PART-5-DATA-BASE/image-5.png)
 
 ### 3. Availability
 
 Ensuring that the database is always available and operational is crucial. Downtime can lead to lost sales and a poor user experience.
 
-![Availability Challenge](PART-5-DATA-BASE/image-3.png)
+![Availability Challenge](IMAGES/PART-5-DATA-BASE/image-3.png)
 
 ---
 
@@ -84,7 +84,7 @@ Databases come in various types, but the two primary categories are **SQL** and 
 - **Use Case:** Ideal for large volumes of unstructured or semi-structured data. They are often used in applications that require high scalability and fast data retrieval.
 - **Real-World Example:** Imagine a NoSQL database as the comment section on Instagram. Comments vary widely in content and structure (text, images, emojis), and the system needs to quickly retrieve and display them to users without predefined schemas or relationships.
 
-![SQL vs NoSQL](PART-5-DATA-BASE/image-6.png)
+![SQL vs NoSQL](IMAGES/PART-5-DATA-BASE/image-6.png)
 
 ### Comparison Table: SQL vs. NoSQL
 

@@ -40,25 +40,25 @@ Imagine your bookstore initially runs out of a small shop. As the number of cust
 
 ### Visual Examples
 
-![Bookstore Initial Setup](PART-1-INTRO/image.png)
+![Bookstore Initial Setup](IMAGES/PART-1-INTRO/image.png)
 
 If more customers come to the bookstore, we will shut down the store and build a bigger shop:
 
-![Building Bigger Shop](PART-1-INTRO/image-1.png)
+![Building Bigger Shop](IMAGES/PART-1-INTRO/image-1.png)
 
 If more customers come, we are scaling vertically:
 
-![Vertical Scaling](PART-1-INTRO/image-2.png)
+![Vertical Scaling](IMAGES/PART-1-INTRO/image-2.png)
 
 What big companies do is open stores in different locations:
 
-![Horizontal Scaling - Multiple Locations](PART-1-INTRO/image-4.png)
+![Horizontal Scaling - Multiple Locations](IMAGES/PART-1-INTRO/image-4.png)
 
 ### Example: Web Application Scaling
 
 Let's say in real life, if we want to build a basic application:
 
-![Basic Application](PART-1-INTRO/image-3.png)
+![Basic Application](IMAGES/PART-1-INTRO/image-3.png)
 
 #### Vertical Scaling
 - Upgrade your server with more CPU, RAM, and disk space.
@@ -76,15 +76,15 @@ If we have to deal with millions of users, then we need to scale appropriately.
 
 **Costs do not scale linearly**
 
-![Cost Scaling](PART-1-INTRO/image-6.png)
+![Cost Scaling](IMAGES/PART-1-INTRO/image-6.png)
 
 **4GB RAM:**
 
-![4GB RAM Cost](PART-1-INTRO/image-5.png)
+![4GB RAM Cost](IMAGES/PART-1-INTRO/image-5.png)
 
 **8GB RAM:**
 
-![8GB RAM Cost](PART-1-INTRO/image-7.png)
+![8GB RAM Cost](IMAGES/PART-1-INTRO/image-7.png)
 
 ## Comparison Table
 
