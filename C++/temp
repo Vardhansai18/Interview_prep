@@ -1,0 +1,29 @@
+/*
+
+Capacity : 5 tokens 
+Refillrate: 1 token / sec 
+
+at time = 0 : 
+Request: 1 -> allowed 
+token = 4 
+
+Request: 2 -> allowed 
+token = 3 
+
+Request: 3 -> allowed 
+token = 2
+
+Request: 4 -> allowed 
+token = 1
+
+Request: 5 -> allowed 
+token = 0 
+
+
+
+Bucket:
+tokens 
+lastRefillTime
+
+refillRate= 
+*/
