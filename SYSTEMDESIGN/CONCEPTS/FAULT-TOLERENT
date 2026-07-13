@@ -1,0 +1,258 @@
+# Fault Tolerance
+
+Fault tolerance is the ability of a system to continue operating correctly even when one or more components fail.
+
+The goal is not to prevent failures (failures are inevitable), but to keep the service available despite them.
+
+## Simple Example
+
+Imagine you are driving a car.
+
+- If one headlight stops working and the car still runs safely, the car is fault tolerant.
+- If the engine stops because one headlight failed, the car is not fault tolerant.
+
+Similarly in software, if one server crashes but users can still use the application, the system is fault tolerant.
+
+## Why Fault Tolerance Matters
+
+In distributed systems, failures happen all the time:
+
+- Servers crash
+- Networks fail
+- Hard disks die
+- Databases become unavailable
+- Entire data centers can go offline
+
+Without fault tolerance:
+
+- Users cannot access the application
+- Data may be lost
+- Revenue and trust are impacted
+
+## Example 1: Web Application
+
+Suppose your application has only one server:
+
+```text
+Users
+      |
+Web Server
+```
+
+If the server crashes, the website is down.
+
+Now add a load balancer and two servers:
+
+```text
+                                     +------------+
+Users -----> | Load Balancer
+                                     +------------+
+                                           /        \
+                              Server A    Server B
+```
+
+If Server A crashes:
+
+```text
+                                     +------------+
+Users -----> | Load Balancer
+                                     +------------+
+                                                            |
+                                                 Server B
+```
+
+Traffic is routed to Server B, and users often do not notice. That is fault tolerance.
+
+## Example 2: Database Replication
+
+Single database setup:
+
+```text
+Application
+            |
+ Database
+```
+
+If the database fails, everything stops.
+
+Replicated setup:
+
+```text
+                        Primary DB
+                                    |
+                  Replication
+                                    |
+                   Secondary DB
+```
+
+If primary fails:
+
+```text
+Application
+            |
+Secondary DB (promoted)
+```
+
+The secondary becomes the new primary. Data loss is zero or minimal, depending on replication mode.
+
+## Example 3: F5 BIG-IP HA
+
+This is a practical high-availability pattern:
+
+```text
+Client
+      |
+Active BIG-IP
+      |
+Servers
+
+Standby BIG-IP
+```
+
+The standby continuously receives config/state updates and monitors the active device.
+
+If active BIG-IP fails:
+
+```text
+Client
+      |
+Standby becomes Active
+      |
+Servers
+```
+
+Traffic management and application delivery continue with minimal interruption.
+
+## Common Fault Tolerance Techniques
+
+### 1. Redundancy
+
+Keep multiple copies of components.
+
+```text
+Server A
+Server B
+Server C
+```
+
+If one fails, others continue serving traffic.
+
+### 2. Replication
+
+Maintain multiple copies of data.
+
+```text
+Primary Database
+                  |
+       Replica 1
+                  |
+       Replica 2
+```
+
+### 3. Failover
+
+Automatically switch to a backup component.
+
+```text
+Primary Server
+                  |
+       Failure
+                  |
+Backup Server
+```
+
+### 4. Load Balancing
+
+Distribute requests across multiple instances.
+
+```text
+Users
+      |
+Load Balancer
+      |
+Server1 Server2 Server3
+```
+
+If one server dies, traffic is sent to healthy instances.
+
+### 5. Health Checks
+
+Continuously test whether components are alive.
+
+Example:
+
+- Every 5 seconds: Are you alive?
+- Yes -> keep in rotation
+- No -> remove from traffic
+
+### 6. Retry Mechanism
+
+Temporary failures often self-resolve.
+
+```text
+API Call -> Failed -> Retry -> Success
+```
+
+Many cloud systems apply retries with backoff automatically.
+
+### 7. Circuit Breaker Pattern
+
+If a downstream service keeps failing, stop sending traffic to it temporarily.
+
+Without circuit breaker:
+
+```text
+App -> Failed Service
+App -> Failed Service
+App -> Failed Service
+```
+
+With circuit breaker:
+
+```text
+App -> Circuit Open -> Return Error Fast
+```
+
+After a cooldown, the system probes the dependency again.
+
+### 8. Data Backups
+
+If a full data store is lost, backups allow restoration.
+
+## Fault Tolerance vs High Availability
+
+These terms are related but not identical.
+
+| Fault Tolerance | High Availability |
+|---|---|
+| Continues operating despite failures | Minimizes downtime |
+| Often no visible interruption | May have brief interruption during failover |
+| Requires more redundancy and cost | Usually easier and less expensive |
+| Example: multiple active servers | Example: active-standby BIG-IP |
+
+## Real-World Examples
+
+- Netflix: if one microservice or availability zone fails, traffic is rerouted and streaming continues.
+- Google Search: requests are served from multiple data centers, so one outage does not stop service.
+- Banking systems: replicated databases reduce transaction data loss risk.
+- Amazon: if one server fails during shopping, another server continues the session.
+
+## Fault Tolerance in Microservices
+
+Consider this e-commerce service graph:
+
+```text
+                        API Gateway
+                                     |
+       -------------------------
+       |      |        |      |
+ Order  Payment Inventory User
+```
+
+If Inventory fails:
+
+- Order service can queue requests.
+- Payment service can continue processing.
+- Inventory service can recover and process queued updates later.
+
+This prevents one service failure from taking down the entire application.
