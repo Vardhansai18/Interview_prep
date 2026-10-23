@@ -1,0 +1,221 @@
+Default architecture set to i686, overridden as x86_64
+build-mode: normal
+JOBS set to 64
+Build script PATH: "/local/kramasubramanian/sources/tmos-rocky-ws2/shared/ccache:/usr/local/bin:/usr/bin:/bin"
+Working on boost:x86_64
+Working on jitterentropy:x86_64
+Working on xerces-c:x86_64
+Working on asm_inline:x86_64
+Working on errdefs:x86_64
+Working on cxxtest:x86_64
+Working on cut:x86_64
+Working on f5includes:x86_64
+Working on ccommon:x86_64
+Working on cppcommon:x86_64
+Working on f5-rest-lib:x86_64
+Working on f5-cpp-json:x86_64
+Working on libcavecommon:x86_64
+Working on schema_parser:x86_64
+Working on schemas:x86_64
+Working on libschemadata:x86_64
+Working on openssl:x86_64
+Working on extremedb:x86_64
+Working on mcplib_common:x86_64
+Working on f5-release-info:i686
+Working on fflag:x86_64
+Working on monitor_common:x86_64
+Working on mcplib:x86_64
+Working on stat_auto:x86_64
+Working on mcp_auto:x86_64
+Working on tamdlib:x86_64
+Building tamdlib:x86_64
+bin/makef5rpm --version 22.0.0 --define 'release 0.0.80' --define 'distribution F5 BIG-IP' --define 'disttag F5-BIGIP-22.0.0' --define 'vendor F5 Networks, Inc.' --define '_rpmdir /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/tamdlib-x86_64/RPMS' --arch x86_64 --builddir tm_lib/tamd tm_lib/tamd/tamdlib.spec
+Building target platforms: x86_64
+Building for target x86_64
+Executing(%prep): /bin/sh -e /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/rpm-tmp.zuaJn1
++ umask 022
++ cd /local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64
++ cd /local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64
++ cd tamdlib-22.0.0
++ /usr/bin/chmod -Rf a+rX,u+w,g-w,o-w .
++ exit 0
+Executing(%build): /bin/sh -e /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/rpm-tmp.SWGQmB
++ umask 022
++ cd /local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64
++ cd tamdlib-22.0.0
++ source /opt/rh/gcc-toolset-11/enable
+++ export PATH=/opt/rh/gcc-toolset-11/root/usr/bin:/local/kramasubramanian/sources/tmos-rocky-ws2/shared/ccache:/usr/local/bin:/usr/bin:/bin
+++ PATH=/opt/rh/gcc-toolset-11/root/usr/bin:/local/kramasubramanian/sources/tmos-rocky-ws2/shared/ccache:/usr/local/bin:/usr/bin:/bin
+++ export MANPATH=/opt/rh/gcc-toolset-11/root/usr/share/man::
+++ MANPATH=/opt/rh/gcc-toolset-11/root/usr/share/man::
+++ export INFOPATH=/opt/rh/gcc-toolset-11/root/usr/share/info
+++ INFOPATH=/opt/rh/gcc-toolset-11/root/usr/share/info
+++ export PCP_DIR=/opt/rh/gcc-toolset-11/root
+++ PCP_DIR=/opt/rh/gcc-toolset-11/root
++++ rpm --eval '%{_libdir}'
+++ rpmlibdir=/usr/lib64
+++ '[' /usr/lib64 '!=' /usr/ ']'
+++ rpmlibdir32=:/opt/rh/gcc-toolset-11/root/usr/lib
+++ dynpath32=:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ rpmlibdir64=
+++ dynpath64=
+++ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ export PKG_CONFIG_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/pkgconfig::/usr/lib64/pkgconfig:/usr/share/pkgconfig
+++ PKG_CONFIG_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/pkgconfig::/usr/lib64/pkgconfig:/usr/share/pkgconfig
++ make ARCH=x86_64 -j64 -l92.0
+make -C attrstore 
+make -C types 
+make -C mcpmsg 
+make[1]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[1]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+make[1]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+LIB_PASS=2 LIB_TARGET=tls make libtamdtypes_tls.a
+LIB_PASS=2 LIB_TARGET=tls make libtamdmcpmsg_tls.a
+.tamd_types-nopthread.d
+.tamd_mcp_msg-nopthread.d
+.tamd_types-pthread.d
+.tamd_mcp_msg-pthread.d
+.tamd_attrstore-pthread.d
+.tamd_attrstore-nopthread.d
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+LIB_PASS=2 LIB_TARGET=nopthread make libtamdtypes.a
+LIB_PASS=2 LIB_TARGET=pthread make libtamdattrstore-pthread.a
+gcc -DF5_CFG_TLS -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -DNEEDS_MCPMSG_AUTO -DNEEDS_MCPMSG_STAT -c tamd_mcp_msg.c -o tamd_mcp_msg_tls.o
+gcc -DF5_CFG_TLS -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -c tamd_types.c -o tamd_types_tls.o
+LIB_PASS=2 LIB_TARGET=nopthread make libtamdattrstore.a
+LIB_PASS=2 LIB_TARGET=pthread make libtamdtypes-pthread.a
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -c tamd_types.c -o tamd_types.o
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -D_REENTRANT -c tamd_attrstore.c -o tamd_attrstore-pthread.o
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -c tamd_attrstore.c -o tamd_attrstore.o
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -D_REENTRANT -c tamd_types.c -o tamd_types-pthread.o
+ar rc libtamdtypes_tls.a tamd_types_tls.o
+ranlib libtamdtypes_tls.a
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+ar rc libtamdattrstore.a tamd_attrstore.o
+ar rc libtamdattrstore-pthread.a tamd_attrstore-pthread.o
+ranlib libtamdattrstore.a
+ranlib libtamdattrstore-pthread.a
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[1]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+ar rc libtamdtypes.a tamd_types.o
+ranlib libtamdtypes.a
+ar rc libtamdtypes-pthread.a tamd_types-pthread.o
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+ranlib libtamdtypes-pthread.a
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+make[1]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+LIB_PASS=2 LIB_TARGET=pthread make libtamdmcpmsg-pthread.a
+LIB_PASS=2 LIB_TARGET=nopthread make libtamdmcpmsg.a
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -DNEEDS_MCPMSG_AUTO -DNEEDS_MCPMSG_STAT -c tamd_mcp_msg.c -o tamd_mcp_msg.o
+gcc -falign-functions=16 -D_REENTRANT -mtune=core2 -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr=/usr -fdebug-prefix-map=/local/kramasubramanian/sources/tmos-rocky-ws2=. -Wno-address-of-packed-member -g -O2  -fPIC -Wall -Werror -Wpointer-arith -Wreturn-type -Wswitch -Wunused -Wundef -Warray-bounds -Wno-error=uninitialized -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -Wmissing-prototypes -fgnu89-inline -DDEBUG=0 -I/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg -I/local/kramasubramanian/sources/tmos-rocky-ws2/devfs_x86_64/usr/include -DNEEDS_MCPMSG_AUTO -DNEEDS_MCPMSG_STAT -D_REENTRANT -c tamd_mcp_msg.c -o tamd_mcp_msg-pthread.o
+ar rc libtamdmcpmsg_tls.a tamd_mcp_msg_tls.o
+ranlib libtamdmcpmsg_tls.a
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+ar rc libtamdmcpmsg-pthread.a tamd_mcp_msg-pthread.o
+ar rc libtamdmcpmsg.a tamd_mcp_msg.o
+ranlib libtamdmcpmsg-pthread.a
+ranlib libtamdmcpmsg.a
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+make[1]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
++ exit 0
+Executing(%install): /bin/sh -e /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/rpm-tmp.fSk1Zx
++ umask 022
++ cd /local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64
++ '[' /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0 '!=' / ']'
++ rm -rf /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0
+++ dirname /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0
++ mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64
++ mkdir /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0
++ cd tamdlib-22.0.0
++ source /opt/rh/gcc-toolset-11/enable
+++ export PATH=/opt/rh/gcc-toolset-11/root/usr/bin:/local/kramasubramanian/sources/tmos-rocky-ws2/shared/ccache:/usr/local/bin:/usr/bin:/bin
+++ PATH=/opt/rh/gcc-toolset-11/root/usr/bin:/local/kramasubramanian/sources/tmos-rocky-ws2/shared/ccache:/usr/local/bin:/usr/bin:/bin
+++ export MANPATH=/opt/rh/gcc-toolset-11/root/usr/share/man::
+++ MANPATH=/opt/rh/gcc-toolset-11/root/usr/share/man::
+++ export INFOPATH=/opt/rh/gcc-toolset-11/root/usr/share/info
+++ INFOPATH=/opt/rh/gcc-toolset-11/root/usr/share/info
+++ export PCP_DIR=/opt/rh/gcc-toolset-11/root
+++ PCP_DIR=/opt/rh/gcc-toolset-11/root
++++ rpm --eval '%{_libdir}'
+++ rpmlibdir=/usr/lib64
+++ '[' /usr/lib64 '!=' /usr/ ']'
+++ rpmlibdir32=:/opt/rh/gcc-toolset-11/root/usr/lib
+++ dynpath32=:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ rpmlibdir64=
+++ dynpath64=
+++ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ export LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ LD_LIBRARY_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64:/opt/rh/gcc-toolset-11/root/usr/lib:/opt/rh/gcc-toolset-11/root/usr/lib64/dyninst:/opt/rh/gcc-toolset-11/root/usr/lib/dyninst
+++ export PKG_CONFIG_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/pkgconfig::/usr/lib64/pkgconfig:/usr/share/pkgconfig
+++ PKG_CONFIG_PATH=/opt/rh/gcc-toolset-11/root/usr/lib64/pkgconfig::/usr/lib64/pkgconfig:/usr/share/pkgconfig
++ rm -rf /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0
++ make ARCH=x86_64 DESTDIR=/local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0 -j64 -l92.0 install
+ACTION=install make attrstore types mcpmsg
+make[1]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0'
+make -C attrstore install
+make -C types install
+make -C mcpmsg install
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+make[2]: Entering directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+mkdir -p /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+cp -f libtamdtypes.a libtamdtypes-pthread.a libtamdtypes_tls.a /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+cp -f libtamdmcpmsg.a libtamdmcpmsg-pthread.a libtamdmcpmsg_tls.a /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+cp -f libtamdattrstore.a libtamdattrstore-pthread.a /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64
+cp -f *.h /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+cp -f *.h /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+cp -f *.h /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/types'
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/mcpmsg'
+make[2]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0/attrstore'
+make[1]: Leaving directory '/local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64/tamdlib-22.0.0'
++ /usr/lib/rpm/check-buildroot
++ /usr/lib/rpm/brp-compress
++ /local/kramasubramanian/sources/tmos-rocky-ws2/rpm/f5/check-buildroot-tmos
++ /usr/bin/python /local/kramasubramanian/sources/tmos-rocky-ws2/check_bin_gen_hmac.py /local/kramasubramanian/sources/tmos-rocky-ws2 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0 x86_64 tamdlib
+Processing files: tamdlib-22.0.0-0.0.80.x86_64
+Processing files: tamdlib-devel-22.0.0-0.0.80.x86_64
+===================================== final: files 12 cdict[2] 100% ddictx[0]
+  0 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd/tamd_attrstore.h	C source, ASCII text [none]
+  1 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd/tamd_attrstore_macros.h	C source, ASCII text [none]
+  2 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd/tamd_mcp_msg.h	C source, ASCII text [none]
+  3 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/include/tamd/tamd_types.h	C source, ASCII text [none]
+  4 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdattrstore-pthread.a	current ar archive [none]
+  5 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdattrstore.a	current ar archive [none]
+  6 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdmcpmsg-pthread.a	current ar archive [none]
+  7 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdmcpmsg.a	current ar archive [none]
+  8 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdmcpmsg_tls.a	current ar archive [none]
+  9 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdtypes-pthread.a	current ar archive [none]
+ 10 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdtypes.a	current ar archive [none]
+ 11 /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0/usr/lib64/libtamdtypes_tls.a	current ar archive [none]
+Provides: interface(devfs) tamdlib-devel = 22.0.0-0.0.80 tamdlib-devel(x86-64) = 22.0.0-0.0.80
+Requires(rpmlib): rpmlib(CompressedFileNames) <= 3.0.4-1 rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+Checking for unpackaged file(s): /usr/lib/rpm/check-files /local/kramasubramanian/sources/tmos-rocky-ws2/_instroot/x86_64/tamdlib-22.0.0
+Wrote: /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/tamdlib-x86_64/RPMS/x86_64/tamdlib-22.0.0-0.0.80.x86_64.rpm
+Wrote: /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/tamdlib-x86_64/RPMS/x86_64/tamdlib-devel-22.0.0-0.0.80.x86_64.rpm
+Executing(%clean): /bin/sh -e /local/kramasubramanian/sources/tmos-rocky-ws2/.tmp/rpm-tmp.OQ4hme
++ umask 022
++ cd /local/kramasubramanian/sources/tmos-rocky-ws2/BUILD_x86_64
++ cd tamdlib-22.0.0
++ exit 0
+Wrote: /local/kramasubramanian/sources/tmos-rocky-ws2/RPMS/FILELIST/x86_64/tamdlib.0.0.80
+DEVFS(devfs_x86_64): installed 1 packages:tamdlib-devel
+Completed tamdlib:x86_64

@@ -1,0 +1,76 @@
+flowchart TD
+    START([Start])
+    START --> SRC
+
+    SRC["Source Branch: tmos-rocky-sandbox"]
+    SRC --> RUN
+
+    RUN["Run rocky-migration-orchestrator agent<br/>for target daemon/application"]
+    RUN --> DRAFT
+
+    SINGLERUN["Run tmos_rocky_migrator agent<br/>for target single module"]
+    SINGLERUN --> REVIEW1
+
+    DRAFT["Agent publishes <br/>1. Draft RB<br/>2. Migration Report : output/module_name/tmos_rocky_migrator_module_name_report.md<br/>3. Build Log: logs/module_name/tmos_rocky_migrator_module_name.log"]
+    DRAFT --> REVIEW1
+
+    REVIEW1{"Migrator ownership:<br/>Review AI Code quality"}
+
+    REVIEW1 -->|"All looks good"| CHOWN
+    REVIEW1 -->|"Issues found<br/>E.g., agent took forbidden shortcut"| FIX1A
+
+    FIX1A["Add correct fix pattern<br/>to respective SKILL.md"]
+    FIX1A --> FIX1B
+
+    FIX1B["Remove bad pattern from<br/>skills/rocky-migration-ai-learnings.SKILL.md"]
+    FIX1B --> COMMIT1
+
+    COMMIT1["Commit SKILL.md modifications<br/>to tmos-rocky-sandbox"]
+    COMMIT1 --> SINGLERUN
+
+    CHOWN["Change RB owner to<br/>respective module owner team"]
+    CHOWN --> PUBLISH
+
+    PUBLISH["Publish RB to team owner<br/>Attach: build log + migration report"]
+    PUBLISH --> REVIEW2
+
+    REVIEW2{"Module owner Review<br/>Code quality check"}
+
+    REVIEW2 -->|"Improvements needed"| FIX2A
+    REVIEW2 -->|"Code quality approved"| COMMIT2
+
+    FIX2A["Add qualified fix pattern<br/>to respective SKILL.md"]
+    FIX2A --> FIX2B
+
+    FIX2B["Remove pattern from<br/>skills/rocky-migration-ai-learnings.SKILL.md"]
+    FIX2B --> RERUN
+
+    RERUN["Re-run tmos_rocky_migrator<br/>agent for module"]
+    RERUN --> REVIEW2
+
+    COMMIT2["Commit code changes +<br/>SKILL.md modifications<br/>to tmos-rocky-sandbox"]
+    COMMIT2 --> INTEGRATE
+
+    INTEGRATE["Module owner integrates<br/>qualified CLs to tmos-rocky branch"]
+    INTEGRATE --> MERGE
+
+    MERGE["Regular auto/manual merge from<br/>tmos-rocky to tmos-rocky-sandbox"]
+    MERGE --> END([End])
+
+    classDef startEnd fill:#2d6a4f,color:#fff,stroke:#1b4332,stroke-width:2px
+    classDef branch fill:#1565c0,color:#fff,stroke:#0d47a1,stroke-width:2px
+    classDef agent fill:#1e88e5,color:#fff,stroke:#1565c0,stroke-width:2px
+    classDef decision fill:#e65100,color:#fff,stroke:#bf360c,stroke-width:2px
+    classDef fix fill:#c62828,color:#fff,stroke:#b71c1c,stroke-width:2px
+    classDef commit fill:#2e7d32,color:#fff,stroke:#1b5e20,stroke-width:2px
+    classDef publish fill:#00695c,color:#fff,stroke:#004d40,stroke-width:2px
+    classDef integrate fill:#6a1b9a,color:#fff,stroke:#4a148c,stroke-width:2px
+
+    class START,END startEnd
+    class SRC branch
+    class RUN,SINGLERUN,RERUN,DRAFT agent
+    class REVIEW1,REVIEW2 decision
+    class FIX1A,FIX1B,FIX2A,FIX2B fix
+    class COMMIT1,COMMIT2 commit
+    class CHOWN,PUBLISH publish
+    class INTEGRATE,MERGE integrate

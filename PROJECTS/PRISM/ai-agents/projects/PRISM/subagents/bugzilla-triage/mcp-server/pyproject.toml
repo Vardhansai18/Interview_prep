@@ -1,0 +1,9 @@
+[project]
+name = "bugzilla-mcp-server"
+version = "1.0.0"
+description = "MCP server wrapping the F5 Bugzilla and Review Board REST APIs"
+requires-python = ">=3.11"
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "httpx>=0.27.0",
+]

@@ -1,0 +1,33 @@
+TMOS Rocky 64-bit Migration Log
+Date: 2026-03-19
+Workspace: /local/kramasubramanian/sources/tmos-rocky-ws2
+Module: tamdlib
+
+1. Validation
+- Exact module name confirmed from ./build -print_pkgs redirected output.
+- Module confirmed present in ai-agents/projects/centos2rocky/input/32bit-modules.txt.
+- Existing 64-bit subagent artifacts were not present, so the 64-bit migration stage was handled directly in this workspace.
+
+2. 64-bit Analysis Findings
+- Serialization APIs used unsigned int *serialized_len through public headers and source wrappers.
+- Rocky/GCC 11 migration context required size-aware length propagation.
+- Affected surfaces:
+  - tm_lib/tamd/types/tamd_types.h
+  - tm_lib/tamd/types/tamd_types.c
+  - tm_lib/tamd/mcpmsg/tamd_mcp_msg.h
+  - tm_lib/tamd/mcpmsg/tamd_mcp_msg.c
+
+3. 64-bit Fixes Applied
+- Added stddef.h where size_t is exposed in public headers.
+- Changed serialized_len parameters from unsigned int * to size_t * across tamd types and MCP message serialization APIs.
+- Preserved on-wire field encoding as unsigned int where protocol data is serialized.
+
+4. Verification
+- First Rocky build after API/type fixes showed tamd_types.c compiled cleanly and the prior -Wno-address-of-packed-member issue no longer failed once GCC toolset 11 was enabled from the spec file.
+- Remaining GCC 11 warning was fixed in tm_lib/tamd/mcpmsg/tamd_mcp_msg.c by initializing prompt_len.
+- Final successful build log: ai-agents/projects/centos2rocky/logs/tmos_rocky_migrator_tamdlib.log
+- Final grep counts from canonical build log:
+  - warnings: 0
+  - errors: 0
+
+SUCCESS CRITERIA MET: Zero warnings and zero errors

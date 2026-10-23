@@ -1,0 +1,61 @@
+=== Code Review Analysis Log ===
+RB ID: 340482
+Diff Version: 1
+Submitter: gollena
+Description: keymgmtd Rocky migration
+Analysis Date: 2026-03-20
+Change Context: Rocky Linux 8.10 / GCC 11 migration for keymgmtd module; 32->64-bit architecture porting
+
+=== Files Changed ===
+1.  f5_build/ltm.def.inc                           (+1/-0)
+2.  tm_daemon/keymgmtd/BundleMgr.cpp               (+2/-1)
+3.  tm_daemon/keymgmtd/BundleMgr.h                 (+1/-1)
+4.  tm_daemon/keymgmtd/CRLMgr.cpp                  (+30/-28)
+5.  tm_daemon/keymgmtd/CRLMgr.h                    (+13/-4)
+6.  tm_daemon/keymgmtd/CertOrderMgr.cpp            (+4/-3)
+7.  tm_daemon/keymgmtd/KeyMgmtDaemon.cpp           (+3/-3)
+8.  tm_daemon/keymgmtd/KeyMgmtOpenSSLUtil.cpp      (+5/-2)
+9.  tm_daemon/keymgmtd/unittests/DigicertReqRespTest.cpp  (NEW +644)
+10. tm_daemon/keymgmtd/unittests/GodaddyReqRespTest.cpp   (NEW +677)
+11. tm_daemon/keymgmtd/unittests/KeyMgmtOpenSSLUtilTest.cpp (NEW +346)
+12. tm_daemon/keymgmtd/unittests/Makefile                 (NEW +107)
+13. tm_daemon/keymgmtd/unittests/test_main_simple.cpp     (NEW +26)
+
+=== Issues Found ===
+
+[HIGH-1] BundleMgr.cpp, CertSourceMgr::DumpDuplicateCerts(), ~Line 665
+  - BIO_get_mem_data() can return negative on error
+  - Negative cast to size_t => SIZE_MAX-like value => buffer overflow in memcpy
+
+[HIGH-2] CRLMgr.h getMfileSize()/setMfileSize() + CRLMgr.cpp ~Line 1121
+  - getMfileSize() return type changed uint32_t->size_t in header
+  - Caller 'uint32_t old_entire_sz = m_crl_sum->getMfileSize()' still truncates
+
+[MEDIUM-3] CRLMgr.cpp NewFetch::createMmapCrlFile() ~Line 452
+  - (uint32_t)SN_count*(uint32_t)sizeof(SerialNum) can overflow uint32_t for large CRLs
+
+[MEDIUM-4] CRLMgr.cpp ReFetch::modifyMmapCrlFile() ~Line 1143
+  - Same overflow pattern as MEDIUM-3 for new_SN_count
+
+[MEDIUM-5] CRLMgr.cpp ReFetch::modifyMmapCrlFile() ~Line 1183
+  - 'new_SN_count=%d' format specifier not updated; should be %u if unsigned
+
+[MEDIUM-6] KeyMgmtDaemon.cpp downloadViaInternalProxyUrl() ~Line 437
+  - Changed %lu to %ld for 'port'; if port is unsigned type %ld is incorrect
+
+[MEDIUM-7] unittests/Makefile
+  - KeyMgmtOpenSSLUtilTest.cpp added but commented out in TEST_SRCS as not implemented
+
+[LOW-8] CRLMgr.h TcpBufferCrlQuery ~Line 247
+  - Removed #pragma pack() - callers using sizeof(TcpBufferCrlQuery) should be verified
+
+[LOW-9] CRLMgr.cpp timestamp_to_str() ~Line 231
+  - No static_assert(sizeof(time_t)==8) to enforce 64-bit time_t assumption
+
+=== Positive Changes ===
+- memcpy() used instead of unaligned pointer casts (alignment safety fix)
+- PRIu64/PRIx64 macros used throughout for uint64_t format strings
+- #pragma pack(4) + sizeof assertion for SerialNum struct
+- Bug fix: pos2==npos check added in get_csr_san()
+- std::auto_ptr -> std::unique_ptr migration
+- Comprehensive new unit test suites for Digicert/Godaddy/OpenSSL utilities

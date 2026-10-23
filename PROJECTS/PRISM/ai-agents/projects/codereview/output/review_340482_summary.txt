@@ -1,0 +1,100 @@
+## Code Review Summary — RB 340482
+
+**Overall Assessment:** ⚠️ Approved with Comments — 2 HIGH issues must be fixed before merge
+
+**Analysis Mode:** Diff-only analysis (source tree tm_daemon/keymgmtd/ not present in workspace)
+**Change Context:** keymgmtd Rocky Linux 8.10 / GCC 11 migration (32-bit → 64-bit porting, Perforce CL 3886342)
+
+---
+
+**Statistics:**
+- Files Changed: 13 (8 modified, 5 new)
+- Lines Added: ~1830 | Lines Removed: ~42
+- Issues Found: 9 total (Critical: 0, High: 2, Medium: 5, Low: 2)
+
+---
+
+**HIGH Priority Issues [2]:**
+
+1. BundleMgr.cpp : CertSourceMgr::DumpDuplicateCerts() : Line 665
+   — BIO_get_mem_data() returns -1 on error; code casts to size_t without checking →
+     SIZE_MAX passed to memcpy() → heap buffer overflow.
+   Fix: Check bio_len < 0 before cast; return early on error.
+
+2. CRLMgr.h (L295) + CRLMgr.cpp (L1121) : ReFetch::modifyMmapCrlFile()
+   — getMfileSize() return type widened to size_t in header but caller still assigns
+     result to uint32_t old_entire_sz → silent truncation.
+   Fix: Change uint32_t old_entire_sz → size_t old_entire_sz at call site.
+
+---
+
+**Medium Priority Issues [5]:**
+
+3. CRLMgr.cpp : NewFetch::createMmapCrlFile() : Line 452
+   — (uint32_t)SN_count * (uint32_t)sizeof(SerialNum) overflows for CRLs > 134M entries.
+   Fix: Use size_t arithmetic; validate < UINT32_MAX before writing on-disk uint32_t field.
+
+4. CRLMgr.cpp : ReFetch::modifyMmapCrlFile() : Line 1143
+   — Same overflow: (uint32_t)new_SN_count * (uint32_t)sizeof(SerialNum).
+   Fix: Same as above.
+
+5. CRLMgr.cpp : ReFetch::modifyMmapCrlFile() : Line 1183
+   — new_SN_count=%d format specifier not updated; should be %u.
+   Fix: Change LOG_ format string from %d → %u for new_SN_count.
+
+6. KeyMgmtDaemon.cpp : downloadViaInternalProxyUrl() : Line 437
+   — Changed %lu → %ld for port; if port is unsigned type, %ld is still incorrect.
+   Fix: Match format specifier to actual declared type of port variable.
+
+7. unittests/Makefile : TEST_SRCS : ~Line 85
+   — KeyMgmtOpenSSLUtilTest.cpp (346 lines, 28 tests) added in this diff but commented
+     out of build — dead test code committed.
+   Fix: Either implement missing dependencies and enable, or remove from this diff.
+
+---
+
+**Low Priority Issues [2]:**
+
+8. CRLMgr.h : TcpBufferCrlQuery struct : ~Line 247
+   — Removing #pragma pack(1) changes struct size; verify sizeof(TcpBufferCrlQuery)
+     is not used in any wire-format buffer size calculations.
+
+9. CRLMgr.cpp : timestamp_to_str() : Line 233
+   — Comment documents 64-bit time_t assumption but no static_assert enforces it.
+   Fix: Add static_assert(sizeof(time_t) == 8, "Y2038 safety requires 64-bit build").
+
+---
+
+**Security Concerns [1]:**
+
+- BundleMgr.cpp : CertSourceMgr::DumpDuplicateCerts() : Line 665
+  — Unchecked BIO_get_mem_data() return leads to potential heap buffer overflow via
+    memcpy(buff, ptr, SIZE_MAX). Fix as described in HIGH issue #1.
+
+---
+
+**Positive Changes (confirmed correct):**
+- memcpy() replacing unaligned casts (*(TcpBufferHeader*)raw_nw_buf etc.) — critical correctness fix
+- PRIu64/PRIx64 macros throughout for uint64_t fields
+- #pragma pack(4) + compile-time sizeof assertion for SerialNum (excellent pattern)
+- get_csr_san(): pos2 == npos check is a genuine bug fix preventing undefined behavior
+- std::auto_ptr → std::unique_ptr (required for C++17/GCC 11)
+- New unit tests: 23 Digicert + 27 GoDaddy + 28 OpenSSL utility test cases
+
+---
+
+**Recommendations:**
+1. Fix Issues #1 and #2 before merge — both are data-safety regressions
+2. Fix Issues #3 and #4 — overflow in CRL size arithmetic silently corrupts mmap files
+3. Resolve or remove KeyMgmtOpenSSLUtilTest.cpp — do not commit dead tests
+4. Run build with -Wall -Wextra -Wformat on Rocky 8.10 / GCC 11 to catch remaining mismatches
+5. Run grep -r "sizeof(TcpBufferCrlQuery)" in source tree to confirm pack() removal is safe
+
+**Analysis Limitations:**
+Diff-only analysis — source tree tm_daemon/keymgmtd/ not in workspace. Cross-file
+dependency analysis (callers of getMfileSize, TcpBufferCrlQuery size usage) could not
+be fully verified. Recommend re-running review in remote session mode for complete audit.
+
+---
+
+Full report: ai-agents/projects/codereview/output/review_340482_report.md

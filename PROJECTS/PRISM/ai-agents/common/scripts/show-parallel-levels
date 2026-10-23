@@ -1,0 +1,594 @@
+#!/usr/bin/perl
+#
+# show-parallel-levels
+#
+# Given a module name, display which dependent modules can be built
+# in parallel at each level, using the same dependency resolution
+# logic as "./build -t <N> <module>".
+#
+# Usage:
+#   ./show-parallel-levels [-arch <arch>] [-override key:val] <module>
+#
+# Example:
+#   ./show-parallel-levels mcpd
+#   ./show-parallel-levels -arch x86_64 mcpd
+#   ./show-parallel-levels -arch x86_64 -override BLD_ENV_BRANCH_NAME:tmos-rocky mcpd
+#
+
+use strict;
+use warnings;
+use Getopt::Long;
+use File::Basename;
+use Cwd 'realpath';
+
+my $ScriptDir = realpath(dirname($0));
+
+# add lib dirs to @INC path
+use lib map { realpath(dirname($0))."/$_" } qw(lib cm/lib);
+
+# library used to parse build definition files
+use BuildDefinition qw(:all);
+
+# Silence tracking/logging that the build libraries may trigger
+BEGIN {
+    # Provide stub modules if tracking libs are expected but not critical here
+    $ENV{F5CM_TRACKING_DISABLE} = 1;
+}
+
+# ---------------------------------------------------------------------------
+# Option handling
+# ---------------------------------------------------------------------------
+my $opt_arch;
+my @opt_override;
+my $opt_help;
+my $opt_show_priority;
+my $opt_show_paths;
+my $opt_quiet;
+
+GetOptions(
+    'arch=s'       => \$opt_arch,
+    'override=s@'  => \@opt_override,
+    'priority'     => \$opt_show_priority,
+    'paths'        => \$opt_show_paths,
+    'q|quiet'      => \$opt_quiet,
+    'h|help'       => \$opt_help,
+) or usage();
+
+usage() if $opt_help;
+
+my $module = shift @ARGV;
+usage() unless $module;
+
+sub usage {
+    print <<EOF;
+Usage: $0 [options] <module>
+
+Display which dependent modules can be built in parallel at each level,
+using the same dependency logic as "./build -t <N> <module>".
+
+Options:
+  -arch <arch>          Set target architecture (e.g. x86_64, i686)
+  -override key:val     Override a build.def macro (repeatable)
+  -priority             Also show priority values for each module
+  -paths                Also show path-safety info
+  -q, --quiet           Suppress library warnings (unresolved macros, etc.)
+  -h, --help            Show this help
+
+Example:
+  $0 -arch x86_64 mcpd
+  $0 -arch x86_64 -override BLD_ENV_BRANCH_NAME:tmos-rocky mcpd
+
+Output:
+  level-0: mod_a, mod_b, mod_c     (leaf deps, can all build in parallel)
+  level-1: mod_d, mod_e            (depend only on level-0 modules)
+  ...
+  level-N: <module>                 (the requested module itself)
+EOF
+    exit 0;
+}
+
+# ---------------------------------------------------------------------------
+# Initialize build definitions (mirrors the build script's init sequence)
+# ---------------------------------------------------------------------------
+chdir $ScriptDir or die "Cannot chdir to $ScriptDir: $!\n";
+
+my $Filename = "build.def";
+$Defs{BUILDDIR}    = $ScriptDir;
+$Defs{BUILDTOP}    = $ScriptDir;
+$Defs{PERFORCETOP} = $ScriptDir;
+$Defs{USER}        = getlogin() || (getpwuid($<))[0];
+$Defs{OPTBUILDNUM} = "";
+$Defs{PKGSERVERTOP}   = "";
+$Defs{LOCALPKGPATH}   = 'RPMS';
+$Defs{REMOTEPKGPATH}  = 'RPMS';
+$Defs{IMGPATH}        = 'IMAGES';
+$Defs{ARCH}           = 'i686';
+$Defs{JOBS}           = '1';
+$Defs{MAKEFLAGS}      = "-j1";
+$Defs{DEFAULTTAG}     = '';
+$Defs{MAINBLD}        = "";
+$Defs{HOSTCLASS}      = "";
+$Defs{RELEASEOPT}     = "-RELEASE=0";
+$Defs{DEFAULTCOST}    = 600;
+
+# Apply arch override early (before loading defs that may reference ARCH)
+if ($opt_arch) {
+    $Defs{ARCH} = $opt_arch;
+    $Overrides{ARCH} = $opt_arch;
+}
+
+# Apply command-line overrides
+foreach my $ov (@opt_override) {
+    if ($ov =~ /^([^:]+):(.*)$/) {
+        $Overrides{uc($1)} = $2;
+        $Defs{uc($1)} = $2;
+    } else {
+        die "Invalid override format: '$ov' (expected key:value)\n";
+    }
+}
+
+# Suppress library warnings if -q specified
+my $_saved_stdout;
+if ($opt_quiet) {
+    open($_saved_stdout, '>&', \*STDOUT);
+    open(STDOUT, '>', '/dev/null');
+}
+
+# Do initial parse for essentials
+$abort_if_include_missing = 0;  # don't die on missing includes
+&ParseDefFile($Filename, ("productname", "hostclass", "optbuildnum"));
+
+# Load branch info if cached
+my $branch_def_inc = '.branch.def.inc';
+if (-f $branch_def_inc) {
+    LoadDef($branch_def_inc, '', '', '');
+}
+
+# Load the full build definitions
+LoadDef($Filename, '', '', '');
+
+# Re-apply overrides (LoadDef may have reset them)
+foreach my $ov (@opt_override) {
+    if ($ov =~ /^([^:]+):(.*)$/) {
+        $Defs{uc($1)} = $2;
+    }
+}
+if ($opt_arch) {
+    $Defs{ARCH} = $opt_arch;
+}
+
+# Resolve macros in macro defs (same as build script does)
+foreach my $def (keys %Defs) {
+    if ($Defs{$def} =~ /&/) {
+        foreach my $sdef (sort { length($b) <=> length($a) } keys %Defs) {
+            $Defs{$def} =~ s/&$sdef/$Defs{$sdef}/g;
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Verify the target module exists
+# ---------------------------------------------------------------------------
+unless (defined $Attribute{$module}) {
+    # Try case-insensitive match
+    my @matches = grep { lc($_) eq lc($module) } keys %Attribute;
+    if (@matches == 1) {
+        $module = $matches[0];
+    } else {
+        die "Error: Module '$module' not found in build definitions.\n"
+          . (@matches ? "  Did you mean: " . join(", ", @matches) . "?\n" : "");
+    }
+}
+
+# ---------------------------------------------------------------------------
+# bek helpers (same as build script)
+# ---------------------------------------------------------------------------
+my @bek_attrs = qw(ARCH);
+
+sub bek_create {
+    my $entry = shift;
+    my $bek = $entry;
+    foreach my $attr (@bek_attrs) {
+        $bek .= ":$Defs{$attr}";
+    }
+    return $bek;
+}
+
+sub bek_entry {
+    my $bek = shift;
+    my @v = split(/:/, $bek);
+    return $v[0];
+}
+
+sub bek_apply {
+    my $bek = shift;
+    my @bekvals = split(/:/, $bek);
+    shift @bekvals;
+    for (my $n = 0; $n < scalar(@bek_attrs); ++$n) {
+        $Defs{$bek_attrs[$n]} = $bekvals[$n];
+    }
+}
+
+sub apply_attr_context {
+    my $entry = shift;
+    foreach my $kvp (ExpandAttrList($entry, 'context')) {
+        next unless $kvp =~ /=/;
+        my ($key, $val) = split(/=/, $kvp, 2);
+        $key = uc($key);
+        $Defs{$key} = $val if defined $Defs{$key};
+    }
+}
+
+sub bek_getdepends {
+    my $bek = shift;
+    my $entry = bek_entry($bek);
+    my @deplist;
+    foreach my $dep (ExpandAttrList($entry, 'depends')) {
+        my %OrigDefs = %Defs;
+        bek_apply($bek);
+        apply_attr_context($dep);
+        push(@deplist, bek_create($dep));
+        %Defs = %OrigDefs;
+    }
+    return @deplist;
+}
+
+# ---------------------------------------------------------------------------
+# Build the full dependency graph (recursive)
+# ---------------------------------------------------------------------------
+my %DepCache;    # bek -> [list of direct dep beks]
+my %AllTargets;  # all unique beks in the tree
+
+sub build_dep_graph {
+    my $bek = shift;
+    return if defined $DepCache{$bek};
+
+    $AllTargets{$bek} = 1;
+    my @depends = bek_getdepends($bek);
+
+    my @dep_beks;
+    foreach my $dep (@depends) {
+        my %SaveDefs = %Defs;
+        my $entry = bek_entry($dep);
+        apply_attr_context($entry);
+        my $depbek = bek_create($entry);
+        push @dep_beks, $depbek;
+        $AllTargets{$depbek} = 1;
+        build_dep_graph($depbek);
+        %Defs = %SaveDefs;
+    }
+    $DepCache{$bek} = \@dep_beks;
+}
+
+# ---------------------------------------------------------------------------
+# Load costs (same as build script)
+# ---------------------------------------------------------------------------
+my %Costs;
+
+sub load_costs {
+    my $costfile = "$Defs{BUILDTOP}/cm/data/history";
+    if (open(my $fh, '<', $costfile)) {
+        while (my $line = <$fh>) {
+            chomp $line;
+            my @parts = split(/\s+/, $line);
+            # format: timestamp  target:arch  <fields>... cost is field index 3
+            $Costs{$parts[1]} = $parts[3] if defined $parts[1] && defined $parts[3];
+        }
+        close $fh;
+    } else {
+        warn "Warning: Could not open cost file $costfile: $!\n";
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Calculate priorities (same algorithm as GenTargetList in build script)
+# ---------------------------------------------------------------------------
+my %Priority;
+
+sub calc_priority {
+    my ($bek, $parent_cost) = @_;
+
+    if (!defined $Costs{$bek}) {
+        $Costs{$bek} = $Defs{DEFAULTCOST};
+    }
+
+    my $new_priority = 0;
+    if (!defined $Priority{$bek} || $parent_cost + $Costs{$bek} > $Priority{$bek}) {
+        $Priority{$bek} = $parent_cost + $Costs{$bek};
+        $new_priority = 1;
+    }
+
+    if ($new_priority && defined $DepCache{$bek}) {
+        foreach my $dep (@{ $DepCache{$bek} }) {
+            calc_priority($dep, $Priority{$bek});
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Parallel path safety check (simplified version of build script logic)
+# ---------------------------------------------------------------------------
+my %SafePaths;
+my %UnSafePaths;
+my %SafeCache;
+
+sub paths_from_file {
+    my ($file) = @_;
+    my %paths;
+    if (open(my $fh, '<', $file)) {
+        while (<$fh>) {
+            chomp;
+            s/#.*$//g;
+            s/^\s+|\s+$//g;
+            next if $_ eq '';
+            $paths{$_} = 1;
+        }
+        close $fh;
+    }
+    return %paths;
+}
+
+sub parallel_path_safe {
+    my ($bek) = @_;
+    return $SafeCache{$bek} if defined $SafeCache{$bek};
+
+    unless ($Defs{PARALLELSAFE} && $Defs{PARALLELSAFE} eq "yes") {
+        $SafeCache{$bek} = 0;
+        return 0;
+    }
+
+    if ($Defs{PARALLELSAFEFILE} && -f $Defs{PARALLELSAFEFILE} && !scalar(keys %SafePaths)) {
+        %SafePaths = paths_from_file($Defs{PARALLELSAFEFILE});
+    }
+    if ($Defs{PARALLELUNSAFEFILE} && -f $Defs{PARALLELUNSAFEFILE} && !scalar(keys %UnSafePaths)) {
+        %UnSafePaths = paths_from_file($Defs{PARALLELUNSAFEFILE});
+    }
+
+    my $entry = bek_entry($bek);
+    my $path;
+    if (defined $Perforce{$entry}) {
+        $path = $Perforce{$entry}[0];
+    }
+
+    unless ($path) {
+        $SafeCache{$bek} = 1;
+        return 1;
+    }
+
+    if ($UnSafePaths{$path}) {
+        $SafeCache{$bek} = 0;
+        return 0;
+    }
+    if ($SafePaths{$path}) {
+        $SafeCache{$bek} = 1;
+        return 1;
+    }
+
+    # Heuristic: single makerpm command (not --inplace) is safe
+    if (defined $Attribute{$entry}{'commands'} && scalar(@{ $Attribute{$entry}{'commands'} }) == 1) {
+        my ($cmd) = ExpandAttrList($entry, 'commands');
+        if ($cmd =~ /bin\/makerpm/ && $cmd !~ /--inplace/) {
+            $SafeCache{$bek} = 1;
+            return 1;
+        }
+    }
+
+    $SafeCache{$bek} = 0;
+    return 0;
+}
+
+# ---------------------------------------------------------------------------
+# Build shared-path conflict table (same as build script)
+# ---------------------------------------------------------------------------
+my %PathDepend;
+
+sub build_path_conflicts {
+    foreach my $path (keys %SharedPath) {
+        my @tgts = split(/ /, $SharedPath{$path});
+        if (scalar(@tgts) > 1) {
+            for (my $i = 0; $i < scalar(@tgts); $i++) {
+                for (my $j = $i + 1; $j < scalar(@tgts); $j++) {
+                    $PathDepend{$tgts[$i]}{$tgts[$j]} = 1;
+                    $PathDepend{$tgts[$j]}{$tgts[$i]} = 1;
+                }
+            }
+        }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# Simulate the parallel scheduler to assign levels
+#
+# This replicates GetNextTarget's logic: at each round (level), pick all
+# targets whose dependencies are satisfied AND that don't conflict with
+# each other on shared paths (unless path-safe).
+# ---------------------------------------------------------------------------
+sub compute_parallel_levels {
+    my @all_beks = keys %AllTargets;
+
+    # Sort by priority descending (same as build script)
+    my @sorted = sort { $Priority{$b} <=> $Priority{$a} } @all_beks;
+
+    my %completed;   # bek -> 1 when "built"
+    my %assigned;    # bek -> level
+    my @levels;      # array of arrayrefs, each inner array = beks at that level
+
+    my $level = 0;
+    my $remaining = scalar(@sorted);
+
+    while ($remaining > 0) {
+        my @this_level;
+        my %running_paths;     # track paths in use this level
+        my %running_entries;   # track entries in use this level
+
+        foreach my $bek (@sorted) {
+            next if defined $completed{$bek};
+
+            my $entry = bek_entry($bek);
+
+            # Check all dependencies are satisfied
+            my $deps_ok = 1;
+            if (defined $DepCache{$bek}) {
+                foreach my $dep (@{ $DepCache{$bek} }) {
+                    unless ($completed{$dep}) {
+                        $deps_ok = 0;
+                        last;
+                    }
+                }
+            }
+            next unless $deps_ok;
+
+            # Check path conflicts with already-selected targets this level
+            my $path;
+            if (defined $Perforce{$entry}) {
+                $path = $Perforce{$entry}[0];
+            }
+
+            my $conflict = 0;
+            if ($path && !parallel_path_safe($bek)) {
+                # Check if this path is already in use this level
+                if ($running_paths{$path}) {
+                    $conflict = 1;
+                }
+                # Also check PathDepend entries
+                my @chk = ($entry);
+                push @chk, keys %{$PathDepend{$entry}} if defined $PathDepend{$entry};
+                foreach my $dep (@chk) {
+                    if ($running_entries{$dep}) {
+                        $conflict = 1;
+                        last;
+                    }
+                }
+            }
+            next if $conflict;
+
+            # This target can be built at this level
+            push @this_level, $bek;
+            $running_entries{$entry} = 1;
+            if ($path) {
+                $running_paths{$path} = 1;
+            }
+        }
+
+        if (scalar(@this_level) == 0) {
+            # Safety: if nothing could be selected but targets remain,
+            # there's likely a cycle or missing dependency
+            warn "Warning: Could not make progress. Remaining targets:\n";
+            foreach my $bek (@sorted) {
+                next if defined $completed{$bek};
+                my @unmet;
+                if (defined $DepCache{$bek}) {
+                    foreach my $dep (@{ $DepCache{$bek} }) {
+                        push @unmet, $dep unless $completed{$dep};
+                    }
+                }
+                warn "  $bek  (unmet: " . join(", ", @unmet) . ")\n";
+            }
+            last;
+        }
+
+        # Mark all selected targets as completed
+        foreach my $bek (@this_level) {
+            $completed{$bek} = 1;
+            $assigned{$bek} = $level;
+            $remaining--;
+        }
+
+        push @levels, \@this_level;
+        $level++;
+    }
+
+    return (\@levels, \%assigned);
+}
+
+# ---------------------------------------------------------------------------
+# Main execution
+# ---------------------------------------------------------------------------
+
+# Build the dependency graph starting from the requested module
+my %SaveDefs = %Defs;
+apply_attr_context($module);
+my $top_bek = bek_create($module);
+build_dep_graph($top_bek);
+%Defs = %SaveDefs;
+
+# Load historical costs and calculate priorities
+load_costs();
+calc_priority($top_bek, 0);
+
+# Build path conflict map
+build_path_conflicts();
+
+# Compute parallel levels
+my ($levels_ref, $assigned_ref) = compute_parallel_levels();
+
+# Restore stdout now that all processing is done
+if ($opt_quiet) {
+    open(STDOUT, '>&', $_saved_stdout);
+}
+
+# ---------------------------------------------------------------------------
+# Output
+# ---------------------------------------------------------------------------
+my $total_targets = scalar(keys %AllTargets);
+my $total_levels  = scalar(@$levels_ref);
+
+print "\n";
+print "Module: $module ($top_bek)\n";
+print "Total dependencies: " . ($total_targets - 1) . "\n";
+print "Total targets (including self): $total_targets\n";
+print "Parallel levels: $total_levels\n";
+print "=" x 72 . "\n\n";
+
+# Determine which entries appear with multiple architectures
+my %entry_archs;
+foreach my $bek (keys %AllTargets) {
+    my $entry = bek_entry($bek);
+    my ($arch) = ($bek =~ /:(.+)$/);
+    $entry_archs{$entry}{$arch} = 1 if $arch;
+}
+
+for (my $i = 0; $i < scalar(@$levels_ref); $i++) {
+    my @beks = @{ $levels_ref->[$i] };
+
+    # Sort within level by priority (highest first) for readability
+    @beks = sort { $Priority{$b} <=> $Priority{$a} } @beks;
+
+    my @names;
+    foreach my $bek (@beks) {
+        my $entry = bek_entry($bek);
+        my $name = $entry;
+        # Show arch suffix if this entry has multiple architectures
+        if (scalar(keys %{$entry_archs{$entry}}) > 1) {
+            my ($arch) = ($bek =~ /:(.+)$/);
+            $name .= ":$arch" if $arch;
+        }
+        if ($opt_show_priority) {
+            $name .= "(p=$Priority{$bek},c=$Costs{$bek})";
+        }
+        if ($opt_show_paths) {
+            my $safe = parallel_path_safe($bek) ? "safe" : "unsafe";
+            my $path = (defined $Perforce{$entry}) ? $Perforce{$entry}[0] : "<none>";
+            $name .= " [path=$safe]";
+        }
+        push @names, $name;
+    }
+
+    printf("level-%d: %s\n", $i, join(", ", @names));
+}
+
+print "\n";
+
+# Print summary
+if ($total_levels > 0) {
+    my $max_parallel = 0;
+    for my $lvl (@$levels_ref) {
+        $max_parallel = scalar(@$lvl) if scalar(@$lvl) > $max_parallel;
+    }
+    print "Max parallelism: $max_parallel targets at once\n";
+    print "Sequential builds: $total_targets\n";
+    print "With -t $max_parallel: $total_levels rounds\n";
+    my $speedup = $total_targets / $total_levels;
+    printf("Theoretical speedup: %.1fx\n", $speedup);
+}
+print "\n";

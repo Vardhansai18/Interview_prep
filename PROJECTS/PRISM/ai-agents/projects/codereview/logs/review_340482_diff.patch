@@ -1,0 +1,2233 @@
+--- //depot/tmos/rocky/f5_build/ltm.def.inc	//depot/tmos/rocky/f5_build/ltm.def.inc#60
++++ //depot/tmos/rocky/f5_build/ltm.def.inc	2026-03-16 00:57:10
+@@ -5234,6 +5234,7 @@ f5-rest-devops-bigip-dsc:
+ 	outfiles:   &TARGET-&PRODUCTVERSION-&PRODUCTBUILD.noarch.rpm
+ 
+ keymgmtd:
++	context:	arch=x86_64
+         prompt:         Key management daemon
+         perforce:       tm_daemon/keymgmtd
+         depends:        openssl libf5daemon boost f5km mcplib \
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.cpp#2
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.cpp	2026-03-13 00:30:07
+@@ -662,7 +662,8 @@ CertSourceMgr::DumpDuplicateCerts(X509Pt
+         PEM_write_bio_X509(mem, cert2.get());
+     }
+ 
+-    len = min((int) BIO_get_mem_data(mem, &ptr), STR_BUFF_LEN - 1);
++    long bio_len = BIO_get_mem_data(mem, &ptr);
++    len = (bio_len < (long)(STR_BUFF_LEN - 1)) ? (size_t)bio_len : (STR_BUFF_LEN - 1);
+     memcpy(buff, ptr, len);
+     buff[len] = '\0';
+     LOG_(DEBUG, buff);
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.h	//depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.h#2
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/BundleMgr.h	2026-03-13 00:30:07
+@@ -457,7 +457,7 @@ class BundleManagement {
+     // A pool of workers for download tasks.
+     boost::thread_group            m_ThreadPool;
+     boost::asio::io_service        m_IoService;
+-    std::auto_ptr<boost::asio::io_service::work> m_KickStartWork;
++    std::unique_ptr<boost::asio::io_service::work> m_KickStartWork;
+ 
+ };
+ 
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.cpp#3
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.cpp	2026-03-13 00:30:07
+@@ -228,9 +228,8 @@ get_current_time()
+ static string
+ timestamp_to_str(uint64_t timestamp, bool use_local_time)
+ {
+-    // localtime() and gmtime() takes time_t which is 32-bit in keymgmtd.
+-    // So the below code has 2038 issue
+-    // (time_t will overflow if timestamp > year 2038)
++    // On 64-bit, time_t is 64 bits, so this cast is safe and the Y2038
++    // issue is resolved. On 32-bit, this cast truncates timestamps beyond 2038.
+     time_t casted_timestamp = static_cast<time_t>(timestamp);
+     std::tm* tm = (use_local_time ?
+             std::localtime(&casted_timestamp) :
+@@ -451,8 +450,8 @@ NewFetch::createMmapCrlFile(const X509_C
+         }
+     }
+ 
+-    uint32_t SNs_sz = SN_count * sizeof(SerialNum);
+-    unsigned int payload_sz = padded_issuer_der_len + SNs_sz;
++    uint32_t SNs_sz = (uint32_t)SN_count * (uint32_t)sizeof(SerialNum);
++    size_t payload_sz = padded_issuer_der_len + SNs_sz;
+     uint32_t entire_sz = payload_sz + sizeof(CrlDataHeader);
+ 
+     // Generate an unique file name base on url
+@@ -596,18 +595,18 @@ CrlSummary::printCrlData()
+     if (SN_count <= 6) {
+         for (unsigned int i = 0; i < SN_count; ++i) {
+             string sn_str = sn_array[i].hex_str();
+-            LOG_(DEBUG, "        SN %d = %s", i, sn_str.c_str());
++            LOG_(DEBUG, "        SN %u = %s", i, sn_str.c_str());
+         }
+     } else {
+         LOG_(DEBUG, "        SN 1 = %s", sn_array[0].hex_str().c_str());
+         LOG_(DEBUG, "        SN 2 = %s", sn_array[1].hex_str().c_str());
+         LOG_(DEBUG, "        SN 3 = %s", sn_array[2].hex_str().c_str());
+         LOG_(DEBUG, "        ...... ...... ...... ...... ......");
+-        LOG_(DEBUG, "        SN %d = %s",
++        LOG_(DEBUG, "        SN %u = %s",
+                 SN_count - 2, sn_array[SN_count-3].hex_str().c_str());
+-        LOG_(DEBUG, "        SN %d = %s",
++        LOG_(DEBUG, "        SN %u = %s",
+                 SN_count - 1, sn_array[SN_count-2].hex_str().c_str());
+-        LOG_(DEBUG, "        SN %d = %s",
++        LOG_(DEBUG, "        SN %u = %s",
+                 SN_count, sn_array[SN_count-1].hex_str().c_str());
+     }
+ }
+@@ -627,10 +626,10 @@ CRLMgr::rebuildFilenameTable()
+ 
+         CrlDataHeader *header = NULL;
+         boost::iostreams::mapped_file mfile;
+-        int mfile_sz = boost::filesystem::file_size(mfilename);
++        uintmax_t mfile_sz = boost::filesystem::file_size(mfilename);
+         if (mfile_sz == 0) {
+             // Invalid file size
+-            LOG_(INFO, "CRL Cache file %s size is %d, which makes "
++            LOG_(INFO, "CRL Cache file %s size is %ju, which makes "
+                     "file invalid", mfilename.c_str(), mfile_sz);
+             continue;
+         }
+@@ -714,7 +713,7 @@ CRLMgr::scheduleNextUpdate(void)
+ 
+     next_update_sec = m_nextUpdateTimeStamp - now;
+ 
+-    LOG_(DEBUG, "Scheduled next update time = %s (%lu sec from now)",
++    LOG_(DEBUG, "Scheduled next update time = %s (%" PRIu64 " sec from now)",
+             timestamp_to_localtime_str(m_nextUpdateTimeStamp).c_str(),
+             next_update_sec);
+     KeyMgmtDaemon::instance().setTimer(::seconds(next_update_sec),
+@@ -731,13 +730,13 @@ CRLMgr::cacheUpdateRemoval(void)
+         // This should never occur
+         LOG_(DEBUG, "The cache update was not scheduled properly - "
+                 "the next update time is not reached yet. "
+-                "now=%lu. m_nextUpdateTimeStamp=%lu",
++                "now=%" PRIu64 ". m_nextUpdateTimeStamp=%" PRIu64 "",
+                 now, m_nextUpdateTimeStamp);
+         return;
+     }
+ 
+     uint64_t two_weeks_ago = now - SECONDS_IN_2_WEEKS;
+-    LOG_(DEBUG, "two_weeks_ago=%lu. now=%lu. m_nextUpdateTimeStamp=%lu",
++    LOG_(DEBUG, "two_weeks_ago=%" PRIu64 ". now=%" PRIu64 ". m_nextUpdateTimeStamp=%" PRIu64 "",
+             two_weeks_ago, now, m_nextUpdateTimeStamp);
+ 
+     ReadLock rLock(m_mutex);
+@@ -1122,7 +1121,7 @@ ReFetch::modifyMmapCrlFile(const X509_CR
+ 
+     uint32_t old_entire_sz = m_crl_sum->getMfileSize();
+     LOG_(DEBUG, "Cached CRL modified: file=%s, old_entire_sz=%u, old_SN_count=%u, "
+-            "old_last_update=%lu, old_next_update=%lu, old_fingerprint=%s",
++            "old_last_update=%" PRIu64 ", old_next_update=%" PRIu64 ", old_fingerprint=%s",
+             m_crl_sum->getMfilename().c_str(), old_entire_sz,
+             (uint32_t)((header->SNs_sz) / sizeof(SerialNum)),
+             header->last_update, header->next_update,
+@@ -1143,7 +1142,7 @@ ReFetch::modifyMmapCrlFile(const X509_CR
+             return false;
+         }
+     }
+-    uint32_t new_SNs_sz = new_SN_count * sizeof(SerialNum);
++    uint32_t new_SNs_sz = (uint32_t)new_SN_count * (uint32_t)sizeof(SerialNum);
+     uint32_t new_entire_sz = (header->SNs_offset) + new_SNs_sz;
+ 
+     // Update entire_sz, last_update, next_update, SNs_sz, crl_config, SNs
+@@ -1183,7 +1182,7 @@ ReFetch::modifyMmapCrlFile(const X509_CR
+     header->crl_fgp.calculated_from_x509_crl(x509_crl);
+ 
+     LOG_(DEBUG, "Cached CRL modified: file=%s, new_entire_sz=%u, new_SN_count=%d, "
+-            "new_last_update=%lu, new_next_update=%lu. new_fingerprint=%s",
++            "new_last_update=%" PRIu64 ", new_next_update=%" PRIu64 ". new_fingerprint=%s",
+             m_crl_sum->getMfilename().c_str(), new_entire_sz, new_SN_count,
+             header->last_update, header->next_update,
+             header->crl_fgp.hex_str().c_str());
+@@ -1263,24 +1262,28 @@ Fetch::VerifyFullCrl(const uint8_t* issu
+ void
+ TcpBufferCrlQuery::networkToHost(uint8_t* raw_nw_buf)
+ {
+-    buf_header = *(TcpBufferHeader*)raw_nw_buf;
++    memcpy(&buf_header, raw_nw_buf, sizeof(TcpBufferHeader));
+     buf_header.networkToHost();
+ 
+     uint8_t* ptr = raw_nw_buf + sizeof(TcpBufferHeader);
+ 
+-    crl_config_sz = ntohs(*(uint16_t*)ptr);
++    uint16_t tmp_u16;
++    memcpy(&tmp_u16, ptr, sizeof(tmp_u16));
++    crl_config_sz = ntohs(tmp_u16);
+     ptr += sizeof(crl_config_sz);
+ 
+     crl_config = (char*) ptr;
+     ptr += crl_config_sz;
+ 
+-    cert_sz = ntohs(*(uint16_t*)ptr);
++    memcpy(&tmp_u16, ptr, sizeof(tmp_u16));
++    cert_sz = ntohs(tmp_u16);
+     ptr += sizeof(cert_sz);
+ 
+     cert = (uint8_t*) ptr;
+     ptr += cert_sz;
+ 
+-    issuer_sz = ntohs(*(uint16_t*)ptr);
++    memcpy(&tmp_u16, ptr, sizeof(tmp_u16));
++    issuer_sz = ntohs(tmp_u16);
+     ptr += sizeof(issuer_sz);
+ 
+     issuer = (uint8_t*) ptr;
+@@ -1296,7 +1299,8 @@ TcpBufferHandler::enqueueProcessWork()
+ void
+ TcpBufferHandler::doProcessWork()
+ {
+-    TcpBufferHeader buf_header = *(TcpBufferHeader*)m_raw_buf;
++    TcpBufferHeader buf_header;
++    memcpy(&buf_header, m_raw_buf, sizeof(TcpBufferHeader));
+     buf_header.networkToHost();
+ 
+     try {
+@@ -1327,15 +1331,15 @@ TcpBufferCrlReply::statsAndSendReply(str
+     // update stats for cert status
+     switch (cert_status) {
+         case CERT_STATUS_GOOD:
+-            LOG_(DEBUG, "req_id=0x%lx. Cert status: good. Cert common name: %s",
++            LOG_(DEBUG, "req_id=0x%" PRIx64 ". Cert status: good. Cert common name: %s",
+                     buf_header.query_id, cert_cn.c_str());
+             if (crl_obj != NULL) {
+                 crl_obj->updateStatsValue(cert_status_good);
+             }
+             break;
+         case CERT_STATUS_REVOKED:
+-            LOG_(DEBUG, "req_id=0x%lx. Cert status: revoked. revoke_reason=%d. "
+-                    "revoke_date=%lu. Cert common name: %s",
++            LOG_(DEBUG, "req_id=0x%" PRIx64 ". Cert status: revoked. revoke_reason=%d. "
++                    "revoke_date=%" PRIu64 ". Cert common name: %s",
+                     buf_header.query_id, cert_revoke_reason, cert_revoke_date,
+                     cert_cn.c_str());
+             if (crl_obj != NULL) {
+@@ -1343,7 +1347,7 @@ TcpBufferCrlReply::statsAndSendReply(str
+             }
+             break;
+         case CERT_STATUS_UNKNOWN:
+-            LOG_(DEBUG, "req_id=0x%lx. Cert status: unknown. Cert common name: %s",
++            LOG_(DEBUG, "req_id=0x%" PRIx64 ". Cert status: unknown. Cert common name: %s",
+                     buf_header.query_id, cert_cn.c_str());
+             if (crl_obj != NULL) {
+                 crl_obj->updateStatsValue(cert_status_unknown);
+@@ -1391,7 +1395,7 @@ TcpBufferHandler::processCrlQuery()
+ 
+     if (f5d::Log::g_debug) {
+         // g_debug is enabled when debug_mode is set to 1 in keymgmtd.daemontools
+-        LOG_(DEBUG, "Process query: req_id=0x%lx. entire_sz=%hu. method=%d. "
++        LOG_(DEBUG, "Process query: req_id=0x%" PRIx64 ". entire_sz=%hu. method=%d. "
+                 "version=%d. crl_config_sz=%hu. crl_config=%s. cert_sz=%hu. "
+                 "issuer_sz=%hu",
+                 query.buf_header.query_id, query.buf_header.entire_sz,
+@@ -1399,7 +1403,7 @@ TcpBufferHandler::processCrlQuery()
+                 query.crl_config_sz, query.crl_config, query.cert_sz,
+                 query.issuer_sz);
+     } else {
+-        LOG_(DEBUG, "Process query: req_id=0x%lx. method=%d. crl_config=%s",
++        LOG_(DEBUG, "Process query: req_id=0x%" PRIx64 ". method=%d. crl_config=%s",
+                 query.buf_header.query_id, query.buf_header.method,
+                 query.crl_config);
+     }
+@@ -1424,7 +1428,7 @@ TcpBufferHandler::processCrlQuery()
+         goto out;
+     }
+     cert_cn = getCommonNamefromX509(x509);
+-    LOG_(DEBUG, "Process query: req_id=0x%lx. cert_common_name=%s",
++    LOG_(DEBUG, "Process query: req_id=0x%" PRIx64 ". cert_common_name=%s",
+             query.buf_header.query_id, cert_cn.c_str());
+ 
+     // Get CRL DP from cert
+@@ -1462,9 +1466,9 @@ TcpBufferHandler::processCrlQuery()
+         reply.cert_revoke_date = cert_sn.revoke_date;
+ 
+         crl_sum->resetLastUsed(); // Reset last_used to current time
+-        LOG_(DEBUG, "Found CRL in cache (%s). crl_last_update=%lu. "
+-                "crl_next_update=%lu. Updating the last_used timestamp to "
+-                "current time (%lu)", crl_sum->getMfilename().c_str(),
++        LOG_(DEBUG, "Found CRL in cache (%s). crl_last_update=%" PRIu64 ". "
++                "crl_next_update=%" PRIu64 ". Updating the last_used timestamp to "
++                "current time (%" PRIu64 ")", crl_sum->getMfilename().c_str(),
+                 crl_sum->getLastUpdate(), crl_sum->getNextUpdate(),
+                 crl_sum->getLastUsed());
+     } else if (found_cache == NOTFOUND) {
+@@ -1569,7 +1573,9 @@ TcpAcceptedConn::run()
+                     boost::asio::buffer(recv_buf, sizeof(entire_sz)));
+ 
+             uint8_t* ptr = recv_buf;
+-            entire_sz = ntohs(*(uint16_t*)ptr);
++            uint16_t tmp_u16;
++            memcpy(&tmp_u16, ptr, sizeof(tmp_u16));
++            entire_sz = ntohs(tmp_u16);
+ 
+             // Instatiate a TcpBufferHandler, which allocates memory for the buffer
+             boost::shared_ptr<TcpBufferHandler> tcp_buf_hdlr =
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.h	//depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.h#1
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/CRLMgr.h	2026-03-13 00:30:07
+@@ -151,9 +151,10 @@ string binaries_to_hex_str(const uint8_t
+     return ss.str();
+ };
+ 
++#pragma pack(4)
+ struct SerialNum
+ {
+-    // SerialNum should be POD, and sizeof(SerialNum) should = MAX_SN_SZ
++    // SerialNum should be POD. Size must be stable across 32/64-bit.
+     // Based on RFC, the maximum size of cert serial number is 20 bytes
+     uint8_t data[MAX_SN_SZ];
+ 
+@@ -170,6 +171,9 @@ struct SerialNum
+     bool set_revoked_sn(const X509_REVOKED* revoked);
+     string hex_str();
+ };
++#pragma pack()
++// Ensure size stability across architectures
++typedef char SerialNum_size_check[(sizeof(SerialNum) == 32) ? 1 : -1];
+ 
+ struct Fingerprint
+ {
+@@ -182,6 +186,8 @@ struct Fingerprint
+ };
+ 
+ // Header of the mmapped file
++// pragma pack(4) is required for mmap file format compatibility
++// between 32-bit and 64-bit builds. Do not change.
+ #pragma pack(4)
+ struct CrlDataHeader
+ {
+@@ -225,7 +231,8 @@ struct TcpBufferHeader
+ #pragma pack()
+ 
+ // Information received from TCP client for query cert status against CRL
+-#pragma pack(1)
++// This is an in-memory-only struct (not a wire format). Pointers are
++// populated by networkToHost() parsing from raw byte buffers.
+ struct TcpBufferCrlQuery
+ {
+     TcpBufferHeader buf_header; // entire_sz, method, version, query_id
+@@ -241,7 +248,6 @@ struct TcpBufferCrlQuery
+     // we don't implement this function in the constructor.
+     void networkToHost(uint8_t* raw_nw_buf);
+ };
+-#pragma pack()
+ 
+ // Information sending back to the TCP client to reply the cert status
+ // This struct is POD
+@@ -289,8 +295,8 @@ public:
+     uint64_t getLastUsed() { return last_used; }
+     string getMfilename() { return mfilename; }
+     CrlDataHeader* getMfileData() { return (CrlDataHeader*)mfile.data(); }
+-    uint32_t getMfileSize() { return mfile.size(); }
+-    void setMfileSize(uint32_t new_size) { mfile.resize(new_size); }
++    size_t getMfileSize() { return mfile.size(); }
++    void setMfileSize(size_t new_size) { mfile.resize(new_size); }
+     uint64_t getNextUpdate() { return getMfileData()->next_update; }
+     uint64_t getLastUpdate() { return getMfileData()->last_update; }
+ 
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/CertOrderMgr.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/CertOrderMgr.cpp#2
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/CertOrderMgr.cpp	2026-03-13 00:30:07
+@@ -1,5 +1,6 @@
+ #include <unistd.h>
+ #include <errno.h>
++#include <inttypes.h>
+ #include <pthread.h>
+ #include <memory>
+ #include <sstream>
+@@ -303,7 +304,7 @@ CertOrder::set_name(const std::string &n
+         return;
+     }
+     m_cert_expiration = kmTime::get_x509_cert_expiration(x509);
+-    kmd_debug("Expiration for cert %s (join: %s) is %lu", m_cert_name.c_str(),
++    kmd_debug("Expiration for cert %s (join: %s) is %" PRIu64, m_cert_name.c_str(),
+             m_name.c_str(), m_cert_expiration);
+ }
+ 
+@@ -356,7 +357,7 @@ CertOrder::set_auto_renewal(bool is_auto
+ void
+ CertOrder::set_cert_expiration(uint64_t expiration)
+ {
+-    kmd_debug("Setting expiration on %s to %lu", m_name.c_str(), expiration);
++    kmd_debug("Setting expiration on %s to %" PRIu64, m_name.c_str(), expiration);
+     boost::lock_guard<boost::mutex> conf_lock(m_config_mutex);
+     m_cert_expiration = expiration;
+ }
+@@ -385,7 +386,7 @@ CertOrder::is_cert_renewal_time()
+     }
+ 
+     uint64_t current_time = kmTime::get_current_time();
+-    kmd_debug("Current time: %lu, cert expiration time: %lu",
++    kmd_debug("Current time: %" PRIu64 ", cert expiration time: %" PRIu64,
+             current_time, m_cert_expiration);
+ 
+     return ((current_time > m_cert_expiration) ||
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtDaemon.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtDaemon.cpp#3
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtDaemon.cpp	2026-03-13 00:30:07
+@@ -437,7 +437,7 @@ KeyMgmtDaemon::downloadViaInternalProxyU
+     LOG_(DEBUG, "ca_file_path: %s", input.ca_file_path.c_str());
+     LOG_(DEBUG, "is_post_method: %s", input.req_method == HTTP_POST ? "yes" : "no");
+     LOG_(DEBUG, "proxy_ip: %s", TMM_HTTP_HUDPROXY_IP.c_str());
+-    LOG_(DEBUG, "proxy_port: %lu", port);
++    LOG_(DEBUG, "proxy_port: %ld", port);
+ 
+ 
+     curl = curl_easy_init();
+@@ -478,7 +478,7 @@ KeyMgmtDaemon::downloadViaInternalProxyU
+             curl_slist_append(c_headers, content_type_header.c_str());
+         }
+         curl_easy_setopt(curl, CURLOPT_POST, 1L);
+-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, input.payload.length());
++        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)input.payload.length());
+         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, input.payload.c_str());
+ 
+     } else if (input.req_method == HTTP_PUT) {
+@@ -489,7 +489,7 @@ KeyMgmtDaemon::downloadViaInternalProxyU
+             curl_slist_append(c_headers, content_type_header.c_str());
+         }
+         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
+-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, input.payload.length());
++        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)input.payload.length());
+         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, input.payload.c_str());
+     }
+ 
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtOpenSSLUtil.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtOpenSSLUtil.cpp#1
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/KeyMgmtOpenSSLUtil.cpp	2026-03-13 00:30:07
+@@ -125,7 +125,7 @@ bool
+ KmX509Utils::get_csr_san(const std::string& csr_file, std::string& san)
+ {
+     char san_str[SAN_LEN];
+-    int pos1 = 0;
++    size_t pos1 = 0;
+ 
+     X509_REQ *x509_req = F5SSL_load_X509_REQ_file(csr_file.c_str());
+     if (x509_req == NULL) {
+@@ -141,7 +141,10 @@ KmX509Utils::get_csr_san(const std::stri
+     }
+     san = san_str;
+     while (pos1 < san.size()) {
+-        int pos2 = san.find(":", pos1);
++        size_t pos2 = san.find(":", pos1);
++        if (pos2 == std::string::npos) {
++            break;
++        }
+         san.erase(san.begin() + pos1, san.begin() + pos2 + 1);
+         pos2 = pos1;
+         pos1 = san.find(",", pos2);
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/DigicertReqRespTest.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/unittests/DigicertReqRespTest.cpp#0
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/DigicertReqRespTest.cpp	2026-03-18 00:24:33
+@@ -0,0 +1,644 @@
++#include <gtest/gtest.h>
++
++#include <string>
++#include <boost/property_tree/json_parser.hpp>
++#include <boost/property_tree/xml_parser.hpp>
++
++#include "certificate_authority_name_t.h"
++#include "cert_order_status_t.h"
++#include "cert_order_type_t.h"
++#include "revoke_reason_t.h"
++
++#include "../CAReqRespDigicert.h"
++
++const std::string content_type_json_dc = "application/json";
++const std::string content_type_x_pem_file_dc = "application/x-pem-file";
++
++const std::string test_csr_dc =
++"-----BEGIN CERTIFICATE REQUEST-----\n"
++"MIHaMIGFAgEAMCAxCzAJBgNVBAYTAlVTMREwDwYDVQQDEwh0ZXN0LmNvbTBcMA0G\n"
++"CSqGSIb3DQEBAQUAA0sAMEgCQQDUvaou2eiKU2LmerSOSBR/On8P0f46cjvk5KNr\n"
++"+dnacABq5TA7kNfDCzPZSjd4ElSwsgZEmRZ1mCScKqdX4ynhAgMBAAGgADANBgkq\n"
++"hkiG9w0BAQsFAANBACRisGvfU7yEN5Q88Uha6dTuL3+JWOlC98NGkn4axhr+Y6K+\n"
++"lrKVoIOP1UMwba3l+B+y+jcT37yjZfFnLYAASzk=\n"
++"-----END CERTIFICATE REQUEST-----\n";
++
++static const std::string digicert_order_info =
++                    "{\n"
++                    "\torgId 123\n"
++                    "\tcertType 20\n"
++                    "\tserverType -1\n"
++                    "\t}";
++
++class DigicertReqRespHelper : public DigicertReqResp
++{
++public:
++    DigicertReqRespHelper(const std::string &name) : DigicertReqResp(name) {}
++    virtual ~DigicertReqRespHelper() {};
++
++    void set_test_req_type(ca_req_type_t req_type) { set_req_type(req_type); }
++
++    // Return the URL for the given request type by temporarily switching
++    // the type, capturing the URL, then restoring the original type.
++    std::string get_url_for(ca_req_type_t req_type)
++    {
++        set_req_type(req_type);
++        return get_url();
++    }
++};
++
++// ---------------------------------------------------------------------------
++// DigicertCertCreateTest — tests for cert creation URL, HTTP method,
++// and various process_resp outcomes.
++// ---------------------------------------------------------------------------
++class DigicertCertCreateTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertCertCreateTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_test_req_type(CA_REQ_TYPE_CREATE);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertCertCreateTest, URLTest)
++{
++    // Capture the CREATE URL, then verify a different req type yields a different URL
++    std::string create_url = req_resp->get_url();
++    ASSERT_FALSE(create_url.empty());
++
++    // Digicert uses the same endpoint for CREATE and RENEW, so compare
++    // against a structurally different request type (REVOKE) instead.
++    req_resp->set_order_id("99999");
++    req_resp->set_test_req_type(CA_REQ_TYPE_REVOKE);
++    ASSERT_NE(create_url, req_resp->get_url());
++}
++
++TEST_F(DigicertCertCreateTest, HTTPMethodTest)
++{
++    ASSERT_EQ(req_resp->get_req_method(), HTTP_POST);
++}
++
++TEST_F(DigicertCertCreateTest, PendingRespTest)
++{
++    std::string resp_payload = "{\"id\":\"67890\",\"certificate_id\":\"cert123\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    ASSERT_FALSE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(DigicertCertCreateTest, RejectedRespTest)
++{
++    std::string resp_payload = "{\"errors\":[{\"code\":\"invalid_param\","
++                                "\"message\":\"CSR is invalid\"}]}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_FALSE(order_result->m_order_resp.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(DigicertCertCreateTest, UnsupportedRespTypeTest)
++{
++    std::string resp_payload = "<Error><code>500</code></Error>";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "application/xml", resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(DigicertCertCreateTest, NoRecognizableRespFieldsTest)
++{
++    std::string resp_payload = "{\"unknown_field\":\"value\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_ERROR);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_order_resp.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(DigicertCertCreateTest, EmptyRespPayloadTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, "", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_ERROR);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_order_resp.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++// ---------------------------------------------------------------------------
++// DigicertCertRevokeTest — revocation response tests
++// ---------------------------------------------------------------------------
++class DigicertCertRevokeTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertCertRevokeTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_order_id("99999");
++        req_resp->set_test_req_type(CA_REQ_TYPE_REVOKE);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertCertRevokeTest, RevokedStatusApprovedTest)
++{
++    std::string resp_payload = "{\"status\":\"revoked\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_APPROVED);
++}
++
++TEST_F(DigicertCertRevokeTest, PendingRevocationTest)
++{
++    std::string resp_payload = "{\"status\":\"pending\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(DigicertCertRevokeTest, HTTPErrorRejectedTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(400, content_type_json_dc, "", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// DigicertCertReqTest — request generation tests
++// ---------------------------------------------------------------------------
++class DigicertCertReqTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertCertReqTest";
++        order_id = "67890";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_validity(365);
++        req_resp->set_csr(test_csr_dc);
++        req_resp->set_order_id(order_id);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++    std::string order_id;
++};
++
++TEST_F(DigicertCertReqTest, PollReqTest)
++{
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_POLL, digicert_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_TRUE(req_payload.empty());
++}
++
++TEST_F(DigicertCertReqTest, RevocationReqTest)
++{
++    req_resp->set_revocation_reason(schema::KEY_COMPROMISE);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, digicert_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_FALSE(req_payload.empty());
++}
++
++// ---------------------------------------------------------------------------
++// DigicertCertPollTest — poll response processing tests
++// ---------------------------------------------------------------------------
++class DigicertCertPollTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertCertPollTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_order_id("54321");
++        req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertCertPollTest, PendingPollRespTest)
++{
++    // A JSON response with no errors field means the order is still pending
++    std::string resp_payload = "{\"status\":\"processing\","
++                                "\"certificate\":{\"id\":\"cert999\"}}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(DigicertCertPollTest, ErrorPollRespTest)
++{
++    std::string resp_payload = "{\"errors\":[{\"message\":\"Order not found\"}]}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_FALSE(order_result->m_order_resp.empty());
++}
++
++TEST_F(DigicertCertPollTest, UnsupportedContentTypePollTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/html", "<html>Error</html>",
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// DigicertOrderIdTest — set_order_id parsing tests
++// ---------------------------------------------------------------------------
++class DigicertOrderIdTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertOrderIdTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertOrderIdTest, OrderIdWithCertId)
++{
++    // set_order_id with "order:cert" format should split correctly
++    req_resp->set_order_id("11111:22222");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    // The URL should contain the cert_id portion for cert download
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++    ASSERT_NE(url.find("22222"), std::string::npos);
++}
++
++TEST_F(DigicertOrderIdTest, OrderIdWithoutCertId)
++{
++    // set_order_id without ":" should use order_id for the URL
++    req_resp->set_order_id("11111");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++    ASSERT_NE(url.find("11111"), std::string::npos);
++}
++
++// ---------------------------------------------------------------------------
++// DigicertPollRevokeTest — poll revoke response tests
++// ---------------------------------------------------------------------------
++class DigicertPollRevokeTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertPollRevokeTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_order_id("77777");
++        req_resp->set_test_req_type(CA_REQ_TYPE_POLL_REVOKE);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertPollRevokeTest, RevokedStatusTest)
++{
++    std::string resp_payload = "{\"status\":\"revoked\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_APPROVED);
++}
++
++TEST_F(DigicertPollRevokeTest, PendingStatusTest)
++{
++    std::string resp_payload = "{\"status\":\"pending\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(DigicertPollRevokeTest, HTTPErrorTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(500, content_type_json_dc, "", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// Additional DigicertCertCreateTest — more process_cert_gen_resp coverage
++// ---------------------------------------------------------------------------
++
++TEST_F(DigicertCertCreateTest, HTTPErrorTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(403, content_type_json_dc,
++            "{\"errors\":[{\"message\":\"Forbidden\"}]}", *order_result);
++    // HTTP 403 still goes through process_cert_gen_resp (content type matches)
++    // The JSON has errors..message, so ret_code is set => REJECTED
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(DigicertCertCreateTest, PendingRespWithCertIdTest)
++{
++    // Response has both id and certificate_id
++    std::string resp_payload = "{\"id\":\"11111\",\"certificate_id\":\"22222\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    // order_id should contain "order_id:cert_id"
++    ASSERT_NE(order_result->m_order_id.find(":"), std::string::npos);
++}
++
++TEST_F(DigicertCertCreateTest, PendingRespWithoutCertIdTest)
++{
++    // Response has id but no certificate_id
++    std::string resp_payload = "{\"id\":\"11111\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    // order_id should just be the order_id without ":"
++    ASSERT_EQ(order_result->m_order_id.find(":"), std::string::npos);
++}
++
++TEST_F(DigicertCertCreateTest, PendingRespWithCertChainTest)
++{
++    // Response with id AND certificate_chain (cert with wrong CN - shouldn't create file)
++    std::string resp_payload =
++        "{\"id\":\"33333\",\"certificate_id\":\"44444\","
++        "\"certificate_chain\":["
++        "{\"subject_common_name\":\"wrong.com\",\"pem\":\"CERTDATA\"}"
++        "]}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++// ---------------------------------------------------------------------------
++// Additional DigicertCertRevokeTest — more process_revocation_resp coverage  
++// ---------------------------------------------------------------------------
++
++TEST_F(DigicertCertRevokeTest, NoStatusFieldTest)
++{
++    // JSON without "status" field
++    std::string resp_payload = "{\"message\":\"no status\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(DigicertCertRevokeTest, EmptyStatusFieldTest)
++{
++    std::string resp_payload = "{\"status\":\"\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(DigicertCertRevokeTest, OtherStatusTest)
++{
++    // Non-"revoked" status
++    std::string resp_payload = "{\"status\":\"processing\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++// ---------------------------------------------------------------------------
++// Additional DigicertCertPollTest — more process_poll_resp coverage
++// ---------------------------------------------------------------------------
++
++TEST_F(DigicertCertPollTest, PollWithCertIdUpdateTest)
++{
++    // Poll resp with certificate.id when cert_id was empty
++    std::string resp_payload = "{\"certificate\":{\"id\":\"cert456\"}}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(DigicertCertPollTest, PollUnsupportedContentTypeTest)
++{
++    // Non-JSON, non-PEM content type
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/html", "<html>error</html>",
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(DigicertCertPollTest, PollEmptyRespTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, "",
++            *order_result);
++
++    // Empty JSON can't be parsed → error path
++    ASSERT_NE(order_result->m_result_code, CERT_ORDER_RESULT_APPROVED);
++}
++
++// ---------------------------------------------------------------------------
++// Additional DigicertPollRevokeTest — more process_poll_revoke_resp coverage
++// ---------------------------------------------------------------------------
++
++TEST_F(DigicertPollRevokeTest, NoStatusInResponseTest)
++{
++    std::string resp_payload = "{\"message\":\"processing\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(DigicertPollRevokeTest, UnknownStatusTest)
++{
++    std::string resp_payload = "{\"status\":\"processing\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_dc, resp_payload,
++            *order_result);
++
++    // Any status that isn't "revoked" → PENDING
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++// ---------------------------------------------------------------------------
++// DigicertReqGenTest — gen_req coverage
++// ---------------------------------------------------------------------------
++class DigicertReqGenTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "DigicertReqGenTest";
++        req_resp =
++            std::unique_ptr<DigicertReqRespHelper>(
++                    new DigicertReqRespHelper(name));
++        req_resp->set_validity(365);
++        req_resp->set_csr(test_csr_dc);
++        req_resp->set_order_id("67890");
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<DigicertReqRespHelper> req_resp;
++};
++
++TEST_F(DigicertReqGenTest, RevocationReqGeneratesPayload)
++{
++    req_resp->set_revocation_reason(schema::KEY_COMPROMISE);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, digicert_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_FALSE(req_payload.empty());
++    // Should contain the revocation reason as comments
++    ASSERT_NE(req_payload.find("comments"), std::string::npos);
++}
++
++TEST_F(DigicertReqGenTest, PollReqEmptyPayload)
++{
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_POLL, digicert_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_TRUE(req_payload.empty());
++}
++
++TEST_F(DigicertReqGenTest, UnsupportedReqType)
++{
++    ASSERT_FALSE(req_resp->gen_req(CA_REQ_TYPE_NONE, digicert_order_info));
++}
++
++// ---------------------------------------------------------------------------
++// DigicertSetOrderId additional tests
++// ---------------------------------------------------------------------------
++
++TEST_F(DigicertOrderIdTest, EmptyOrderId)
++{
++    req_resp->set_order_id("");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++}
++
++TEST_F(DigicertOrderIdTest, OrderIdColonAtEnd)
++{
++    // "11111:" — colon at end, no cert_id portion
++    req_resp->set_order_id("11111:");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++}
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/GodaddyReqRespTest.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/unittests/GodaddyReqRespTest.cpp#0
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/GodaddyReqRespTest.cpp	2026-03-18 00:24:33
+@@ -0,0 +1,677 @@
++#include <gtest/gtest.h>
++
++#include <string>
++#include <boost/property_tree/json_parser.hpp>
++
++#include "certificate_authority_name_t.h"
++#include "cert_order_status_t.h"
++#include "cert_order_type_t.h"
++#include "revoke_reason_t.h"
++
++#include "../CAReqRespGodaddy.h"
++
++const std::string content_type_json_gd = "application/json";
++
++const std::string test_csr_gd =
++"-----BEGIN CERTIFICATE REQUEST-----\n"
++"MIHaMIGFAgEAMCAxCzAJBgNVBAYTAlVTMREwDwYDVQQDEwh0ZXN0LmNvbTBcMA0G\n"
++"CSqGSIb3DQEBAQUAA0sAMEgCQQDUvaou2eiKU2LmerSOSBR/On8P0f46cjvk5KNr\n"
++"+dnacABq5TA7kNfDCzPZSjd4ElSwsgZEmRZ1mCScKqdX4ynhAgMBAAGgADANBgkq\n"
++"hkiG9w0BAQsFAANBACRisGvfU7yEN5Q88Uha6dTuL3+JWOlC98NGkn4axhr+Y6K+\n"
++"lrKVoIOP1UMwba3l+B+y+jcT37yjZfFnLYAASzk=\n"
++"-----END CERTIFICATE REQUEST-----\n";
++
++static const std::string godaddy_order_info =
++                    "{\n"
++                    "\tproductType DV_SSL\n"
++                    "\tperiod 1\n"
++                    "\t}";
++
++class GodaddyReqRespHelper : public GodaddyReqResp
++{
++public:
++    GodaddyReqRespHelper(const std::string &name) : GodaddyReqResp(name) {}
++    virtual ~GodaddyReqRespHelper() {};
++
++    void set_test_req_type(ca_req_type_t req_type) { set_req_type(req_type); }
++};
++
++// ---------------------------------------------------------------------------
++// GodaddyCertCreateTest — URL, HTTP method, and create-response tests
++// ---------------------------------------------------------------------------
++class GodaddyCertCreateTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyCertCreateTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_test_req_type(CA_REQ_TYPE_CREATE);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyCertCreateTest, URLTest)
++{
++    // Verify the URL is non-empty and changes when req type changes
++    std::string create_url = req_resp->get_url();
++    ASSERT_FALSE(create_url.empty());
++
++    req_resp->set_test_req_type(CA_REQ_TYPE_RENEW);
++    ASSERT_NE(create_url, req_resp->get_url());
++}
++
++TEST_F(GodaddyCertCreateTest, HTTPMethodTest)
++{
++    ASSERT_EQ(req_resp->get_req_method(), HTTP_POST);
++}
++
++TEST_F(GodaddyCertCreateTest, PendingRespTest)
++{
++    std::string resp_payload = "{\"certificateId\":\"gd-cert-001\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    ASSERT_FALSE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(GodaddyCertCreateTest, RejectedRespNullStatusTest)
++{
++    // When certificateId is absent and status is "null" or absent
++    std::string resp_payload = "{\"status\":\"null\",\"message\":\"Bad request\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(GodaddyCertCreateTest, RejectedRespWithStatusTest)
++{
++    std::string resp_payload = "{\"status\":\"DENIED\",\"message\":\"Domain validation failed\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_FALSE(order_result->m_order_resp.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(GodaddyCertCreateTest, UnsupportedContentTypeTest)
++{
++    std::string resp_payload = "<html>Error</html>";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/html", resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++TEST_F(GodaddyCertCreateTest, EmptyRespPayloadTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, "", *order_result);
++
++    // Empty JSON cannot be parsed — should be rejected
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_TRUE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_temp_file.empty());
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyCertRevokeTest — revocation response tests
++// ---------------------------------------------------------------------------
++class GodaddyCertRevokeTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyCertRevokeTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_order_id("gd-txn-001");
++        req_resp->set_test_req_type(CA_REQ_TYPE_REVOKE);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyCertRevokeTest, SuccessfulRevocationTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, "", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_APPROVED);
++}
++
++TEST_F(GodaddyCertRevokeTest, HTTPErrorRevocationTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(403, content_type_json_gd,
++            "{\"code\":\"FORBIDDEN\"}", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyCertReqTest — request generation tests
++// ---------------------------------------------------------------------------
++class GodaddyCertReqTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyCertReqTest";
++        order_id = "gd-txn-002";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_validity(365);
++        req_resp->set_csr(test_csr_gd);
++        req_resp->set_order_id(order_id);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++    std::string order_id;
++};
++
++TEST_F(GodaddyCertReqTest, PollReqTest)
++{
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_POLL, godaddy_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_TRUE(req_payload.empty());
++}
++
++TEST_F(GodaddyCertReqTest, RevocationReqTest)
++{
++    req_resp->set_revocation_reason(schema::KEY_COMPROMISE);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_FALSE(req_payload.empty());
++    // Payload should contain the revocation reason
++    ASSERT_NE(req_payload.find("KEY_COMPROMISE"), std::string::npos);
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyCertPollTest — poll response processing tests
++// ---------------------------------------------------------------------------
++class GodaddyCertPollTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyCertPollTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_order_id("gd-txn-003");
++        req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyCertPollTest, PendingIssuancePollTest)
++{
++    std::string resp_payload = "{\"status\":\"PENDING_ISSUANCE\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(GodaddyCertPollTest, PendingRevocationPollTest)
++{
++    std::string resp_payload = "{\"status\":\"PENDING_REVOCATION\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(GodaddyCertPollTest, PendingRekeyPollTest)
++{
++    std::string resp_payload = "{\"status\":\"PENDING_REKEY\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++}
++
++TEST_F(GodaddyCertPollTest, IssuedStatusTransitionTest)
++{
++    // When status is ISSUED, Godaddy sets cert ready and returns PENDING
++    // to trigger a follow-up certificate download
++    std::string resp_payload = "{\"status\":\"ISSUED\","
++                                "\"serialNumber\":\"AABBCC\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    // After ISSUED, the order_id should contain the serial number
++    ASSERT_FALSE(order_result->m_order_id.empty());
++    ASSERT_TRUE(order_result->m_update_config);
++}
++
++TEST_F(GodaddyCertPollTest, ErrorPollRespTest)
++{
++    std::string resp_payload = "{}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_ERROR);
++}
++
++TEST_F(GodaddyCertPollTest, RejectedPollRespTest)
++{
++    std::string resp_payload = "{\"status\":\"CANCELED\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++    ASSERT_FALSE(order_result->m_order_resp.empty());
++}
++
++TEST_F(GodaddyCertPollTest, UnsupportedContentTypePollTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/plain", "unexpected",
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyOrderIdTest — set_order_id parsing tests
++// ---------------------------------------------------------------------------
++class GodaddyOrderIdTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyOrderIdTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyOrderIdTest, OrderIdWithSerialNum)
++{
++    // order_id = "txnId:serialNum" => after set, URL for POLL should use
++    // the download endpoint since cert is ready
++    req_resp->set_order_id("txn-abc:serial-xyz");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++    // When serial is present, m_is_cert_ready = true => download endpoint
++    ASSERT_NE(url.find("download"), std::string::npos);
++}
++
++TEST_F(GodaddyOrderIdTest, OrderIdWithoutSerialNum)
++{
++    // order_id without ":" => just transaction_id, cert not ready
++    req_resp->set_order_id("txn-abc");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++    ASSERT_NE(url.find("txn-abc"), std::string::npos);
++    // Without serial, download endpoint should NOT be in URL
++    ASSERT_EQ(url.find("download"), std::string::npos);
++}
++
++TEST_F(GodaddyOrderIdTest, OrderIdWithColonAtEnd)
++{
++    // "txn-abc:" — colon at end but no serial portion
++    req_resp->set_order_id("txn-abc:");
++    req_resp->set_test_req_type(CA_REQ_TYPE_POLL);
++
++    std::string url = req_resp->get_url();
++    ASSERT_FALSE(url.empty());
++    // Should NOT use download endpoint (serial is empty)
++    ASSERT_EQ(url.find("download"), std::string::npos);
++}
++
++// ---------------------------------------------------------------------------
++// Additional GodaddyCertCreateTest — more process_cert_gen_resp coverage
++// ---------------------------------------------------------------------------
++
++TEST_F(GodaddyCertCreateTest, NonJsonContentTypeTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/html", "<html>error</html>",
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(GodaddyCertCreateTest, ErrorStatusInRespTest)
++{
++    // Response has no certificateId but has a non-null status
++    std::string resp_payload = "{\"status\":\"DENIED\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++// ---------------------------------------------------------------------------
++// Additional GodaddyCertRevokeTest — using existing fixture
++// ---------------------------------------------------------------------------
++
++TEST_F(GodaddyCertRevokeTest, HTTPMethodTest)
++{
++    ASSERT_EQ(req_resp->get_req_method(), HTTP_POST);
++}
++
++TEST_F(GodaddyCertRevokeTest, FailedRevocationTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(403, content_type_json_gd,
++            "{\"message\":\"Forbidden\"}", *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(GodaddyCertRevokeTest, URLContainsRevokeEndpoint)
++{
++    req_resp->set_order_id("txn-revoke-123");
++    req_resp->set_test_req_type(CA_REQ_TYPE_REVOKE);
++
++    std::string url = req_resp->get_url();
++    ASSERT_NE(url.find("revoke"), std::string::npos);
++}
++
++// ---------------------------------------------------------------------------
++// Additional GodaddyCertPollTest — using existing fixture
++// ---------------------------------------------------------------------------
++
++TEST_F(GodaddyCertPollTest, HTTPMethodTest)
++{
++    ASSERT_EQ(req_resp->get_req_method(), HTTP_GET);
++}
++
++TEST_F(GodaddyCertPollTest, IssuedWithSerialTest)
++{
++    // ISSUED status with serial number – cert becomes ready for download
++    std::string resp_payload = "{\"status\":\"ISSUED\",\"serialNumber\":\"ABC123\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    // ISSUED is not "pending" so is_order_pending returns false
++    // Then ret_code == "ISSUED" → m_is_cert_ready = true, result = PENDING
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    ASSERT_TRUE(order_result->m_update_config);
++    ASSERT_NE(order_result->m_order_id.find(":"), std::string::npos);
++}
++
++TEST_F(GodaddyCertPollTest, RejectedStatusTest)
++{
++    std::string resp_payload = "{\"status\":\"CANCELED\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(GodaddyCertPollTest, EmptyStatusTest)
++{
++    // No status field at all → empty ret_code → ERROR
++    std::string resp_payload = "{\"message\":\"something\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_ERROR);
++}
++
++TEST_F(GodaddyCertPollTest, NonJsonContentTypeTest2)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, "text/plain", "error",
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_REJECTED);
++}
++
++TEST_F(GodaddyCertPollTest, EmptyRespPayloadTest)
++{
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, "",
++            *order_result);
++
++    // Empty payload can't be parsed → error path
++    ASSERT_NE(order_result->m_result_code, CERT_ORDER_RESULT_APPROVED);
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyReqGenTest — gen_req coverage
++// ---------------------------------------------------------------------------
++class GodaddyReqGenTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyReqGenTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_validity(365);
++        req_resp->set_csr(test_csr_gd);
++        req_resp->set_order_id("txn-gen-123");
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyReqGenTest, RevocationReqGeneratesPayload)
++{
++    req_resp->set_revocation_reason(schema::KEY_COMPROMISE);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_FALSE(req_payload.empty());
++    ASSERT_NE(req_payload.find("reason"), std::string::npos);
++}
++
++TEST_F(GodaddyReqGenTest, PollReqEmptyPayload)
++{
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_POLL, godaddy_order_info));
++
++    std::string req_payload = req_resp->get_req_payload();
++    ASSERT_TRUE(req_payload.empty());
++}
++
++TEST_F(GodaddyReqGenTest, PollReqNoTransactionIdFails)
++{
++    req_resp->set_order_id("");
++    // gen_poll_req returns false if transaction_id is empty
++    ASSERT_FALSE(req_resp->gen_req(CA_REQ_TYPE_POLL, godaddy_order_info));
++}
++
++TEST_F(GodaddyReqGenTest, UnsupportedReqType)
++{
++    ASSERT_FALSE(req_resp->gen_req(CA_REQ_TYPE_NONE, godaddy_order_info));
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyRevocationReasonTest — get_revocation_reason_enum coverage
++// ---------------------------------------------------------------------------
++class GodaddyRevocationReasonTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyRevocationReasonTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyRevocationReasonTest, KeyCompromise)
++{
++    req_resp->set_revocation_reason(schema::KEY_COMPROMISE);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++    std::string payload = req_resp->get_req_payload();
++    ASSERT_NE(payload.find("KEY_COMPROMISE"), std::string::npos);
++}
++
++TEST_F(GodaddyRevocationReasonTest, AffiliationChanged)
++{
++    req_resp->set_revocation_reason(schema::AFFILIATION_CHANGED);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++    std::string payload = req_resp->get_req_payload();
++    ASSERT_NE(payload.find("AFFILIATION_CHANGED"), std::string::npos);
++}
++
++TEST_F(GodaddyRevocationReasonTest, Superseded)
++{
++    req_resp->set_revocation_reason(schema::SUPERSEDED);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++    std::string payload = req_resp->get_req_payload();
++    ASSERT_NE(payload.find("SUPERSEDED"), std::string::npos);
++}
++
++TEST_F(GodaddyRevocationReasonTest, PrivilegeWithdrawn)
++{
++    req_resp->set_revocation_reason(schema::PRIVILEGE_WITHDRAWN);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++    std::string payload = req_resp->get_req_payload();
++    ASSERT_NE(payload.find("PRIVILEGE_WITHDRAWN"), std::string::npos);
++}
++
++TEST_F(GodaddyRevocationReasonTest, OperationCessation)
++{
++    req_resp->set_revocation_reason(schema::OPERATION_CESSATION);
++    ASSERT_TRUE(req_resp->gen_req(CA_REQ_TYPE_REVOKE, godaddy_order_info));
++    std::string payload = req_resp->get_req_payload();
++    ASSERT_NE(payload.find("CESSATION_OF_OPERATION"), std::string::npos);
++}
++
++// ---------------------------------------------------------------------------
++// GodaddyRenewTest — renew URL and HTTP method
++// ---------------------------------------------------------------------------
++class GodaddyRenewTest : public ::testing::Test
++{
++public:
++    virtual void SetUp()
++    {
++        std::string name = "GodaddyRenewTest";
++        req_resp =
++            std::unique_ptr<GodaddyReqRespHelper>(
++                    new GodaddyReqRespHelper(name));
++        req_resp->set_order_id("txn-renew-123");
++        req_resp->set_test_req_type(CA_REQ_TYPE_RENEW);
++    }
++
++    virtual void TearDown()
++    {
++        req_resp.reset();
++    }
++
++    std::unique_ptr<GodaddyReqRespHelper> req_resp;
++};
++
++TEST_F(GodaddyRenewTest, URLContainsRenewEndpoint)
++{
++    std::string url = req_resp->get_url();
++    ASSERT_NE(url.find("renew"), std::string::npos);
++}
++
++TEST_F(GodaddyRenewTest, HTTPMethodIsPost)
++{
++    ASSERT_EQ(req_resp->get_req_method(), HTTP_POST);
++}
++
++TEST_F(GodaddyRenewTest, RenewProcessRespSameAsCreate)
++{
++    // Renew uses same process_cert_gen_resp path as create
++    std::string resp_payload = "{\"certificateId\":\"gd-renew-001\"}";
++
++    std::unique_ptr<CertOrderResult> order_result(new CertOrderResult);
++    req_resp->process_resp(200, content_type_json_gd, resp_payload,
++            *order_result);
++
++    ASSERT_EQ(order_result->m_result_code, CERT_ORDER_RESULT_PENDING);
++    ASSERT_FALSE(order_result->m_order_id.empty());
++}
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/KeyMgmtOpenSSLUtilTest.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/unittests/KeyMgmtOpenSSLUtilTest.cpp#0
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/KeyMgmtOpenSSLUtilTest.cpp	2026-03-18 00:24:33
+@@ -0,0 +1,346 @@
++/**
++ * Unit tests for KeyMgmtOpenSSLUtil.h functions.
++ *
++ * Tests pure/utility functions that do NOT require daemon infrastructure:
++ *   - KmBase64UrlUtils::toBase64url / fromBase64Url
++ *   - KmHashUtil::sha256
++ *   - KmSignatureUtil::getHmacSignature
++ *   - kmTime::iso8601_to_time
++ *   - kmTime::asn1_time_to_sec
++ *   - kmTime::get_current_time
++ */
++
++#include <gtest/gtest.h>
++#include <string>
++#include <cstring>
++#include <ctime>
++
++#include <boost/shared_ptr.hpp>
++
++extern "C" {
++#include <openssl/ssl.h>
++#include <openssl/evp.h>
++#include <openssl/bio.h>
++#include <openssl/x509.h>
++}
++
++#include "../KeyMgmtOpenSSLUtil.h"
++
++// ===========================================================================
++// KmBase64UrlUtils tests
++// ===========================================================================
++
++TEST(Base64UrlTest, EncodeSimpleString)
++{
++    std::string encoded = KmBase64UrlUtils::toBase64url("Hello, World!");
++    ASSERT_FALSE(encoded.empty());
++    // Standard base64 of "Hello, World!" is "SGVsbG8sIFdvcmxkIQ=="
++    // Base64url strips '=' and replaces +/ with -_
++    ASSERT_EQ(encoded.find('='), std::string::npos);
++    ASSERT_EQ(encoded.find('+'), std::string::npos);
++    ASSERT_EQ(encoded.find('/'), std::string::npos);
++}
++
++TEST(Base64UrlTest, RoundTrip)
++{
++    std::string input = "Hello, World!";
++    std::string encoded = KmBase64UrlUtils::toBase64url(input);
++    std::string decoded = KmBase64UrlUtils::fromBase64Url(encoded);
++    ASSERT_EQ(input, decoded);
++}
++
++TEST(Base64UrlTest, RoundTripBinaryData)
++{
++    // Binary data with all byte values 0-255
++    std::string input;
++    for (int i = 0; i < 256; i++) {
++        input += static_cast<char>(i);
++    }
++    std::string encoded = KmBase64UrlUtils::toBase64url(input);
++    std::string decoded = KmBase64UrlUtils::fromBase64Url(encoded);
++    ASSERT_EQ(input, decoded);
++}
++
++TEST(Base64UrlTest, EmptyInput)
++{
++    std::string encoded = KmBase64UrlUtils::toBase64url("");
++    std::string decoded = KmBase64UrlUtils::fromBase64Url(encoded);
++    ASSERT_TRUE(decoded.empty());
++}
++
++TEST(Base64UrlTest, SingleChar)
++{
++    std::string input = "A";
++    std::string encoded = KmBase64UrlUtils::toBase64url(input);
++    ASSERT_FALSE(encoded.empty());
++    std::string decoded = KmBase64UrlUtils::fromBase64Url(encoded);
++    ASSERT_EQ(input, decoded);
++}
++
++TEST(Base64UrlTest, PaddingVariants)
++{
++    // Input length 1 (needs 2 padding '=')
++    ASSERT_EQ("a", KmBase64UrlUtils::fromBase64Url(
++                        KmBase64UrlUtils::toBase64url("a")));
++    // Input length 2 (needs 1 padding '=')
++    ASSERT_EQ("ab", KmBase64UrlUtils::fromBase64Url(
++                        KmBase64UrlUtils::toBase64url("ab")));
++    // Input length 3 (no padding)
++    ASSERT_EQ("abc", KmBase64UrlUtils::fromBase64Url(
++                        KmBase64UrlUtils::toBase64url("abc")));
++}
++
++TEST(Base64UrlTest, SpecialBase64Characters)
++{
++    // Input that produces + and / in standard base64
++    // The bytes 0xfb, 0xff, 0xfe produce "u//+" in standard base64
++    std::string input("\xfb\xff\xfe", 3);
++    std::string encoded = KmBase64UrlUtils::toBase64url(input);
++    // Must use - instead of + and _ instead of /
++    ASSERT_EQ(encoded.find('+'), std::string::npos);
++    ASSERT_EQ(encoded.find('/'), std::string::npos);
++    // Round-trip must succeed
++    ASSERT_EQ(input, KmBase64UrlUtils::fromBase64Url(encoded));
++}
++
++TEST(Base64UrlTest, DecodeInvalidInput)
++{
++    // Completely invalid base64 should return empty or not crash
++    std::string result = KmBase64UrlUtils::fromBase64Url("!!!invalid!!!");
++    // Just verify it doesn't crash; result may be empty or garbage
++    (void)result;
++}
++
++// ===========================================================================
++// KmHashUtil tests
++// ===========================================================================
++
++TEST(Sha256Test, KnownVector)
++{
++    // SHA-256("abc") = ba7816bf 8f01cfea 414140de 5dae2223
++    //                  b00361a3 96177a9c b410ff61 f20015ad
++    std::string hash = KmHashUtil::sha256("abc");
++    ASSERT_EQ(hash.size(), 32u);
++
++    // Check first 4 bytes
++    ASSERT_EQ(static_cast<unsigned char>(hash[0]), 0xba);
++    ASSERT_EQ(static_cast<unsigned char>(hash[1]), 0x78);
++    ASSERT_EQ(static_cast<unsigned char>(hash[2]), 0x16);
++    ASSERT_EQ(static_cast<unsigned char>(hash[3]), 0xbf);
++}
++
++TEST(Sha256Test, EmptyString)
++{
++    // SHA-256("") = e3b0c44298fc1c149afbf4c8996fb924
++    //               27ae41e4649b934ca495991b7852b855
++    std::string hash = KmHashUtil::sha256("");
++    ASSERT_EQ(hash.size(), 32u);
++
++    ASSERT_EQ(static_cast<unsigned char>(hash[0]), 0xe3);
++    ASSERT_EQ(static_cast<unsigned char>(hash[1]), 0xb0);
++    ASSERT_EQ(static_cast<unsigned char>(hash[2]), 0xc4);
++    ASSERT_EQ(static_cast<unsigned char>(hash[3]), 0x42);
++}
++
++TEST(Sha256Test, DeterministicOutput)
++{
++    std::string hash1 = KmHashUtil::sha256("test data");
++    std::string hash2 = KmHashUtil::sha256("test data");
++    ASSERT_EQ(hash1, hash2);
++}
++
++TEST(Sha256Test, DifferentInputsDifferentHashes)
++{
++    std::string hash1 = KmHashUtil::sha256("data1");
++    std::string hash2 = KmHashUtil::sha256("data2");
++    ASSERT_NE(hash1, hash2);
++}
++
++// ===========================================================================
++// KmSignatureUtil tests (HMAC)
++// ===========================================================================
++
++TEST(HmacTest, HS256NonEmpty)
++{
++    std::string sig = KmSignatureUtil::getHmacSignature(KM_HS256, "key", "data");
++    ASSERT_FALSE(sig.empty());
++    ASSERT_EQ(sig.size(), 32u);  // SHA-256 produces 32 bytes
++}
++
++TEST(HmacTest, HS384NonEmpty)
++{
++    std::string sig = KmSignatureUtil::getHmacSignature(KM_HS384, "key", "data");
++    ASSERT_FALSE(sig.empty());
++    ASSERT_EQ(sig.size(), 48u);  // SHA-384 produces 48 bytes
++}
++
++TEST(HmacTest, HS512NonEmpty)
++{
++    std::string sig = KmSignatureUtil::getHmacSignature(KM_HS512, "key", "data");
++    ASSERT_FALSE(sig.empty());
++    ASSERT_EQ(sig.size(), 64u);  // SHA-512 produces 64 bytes
++}
++
++TEST(HmacTest, HS256KnownVector)
++{
++    // HMAC-SHA256(key="key", data="The quick brown fox jumps over the lazy dog")
++    // = f7bc83f430538424b13298e6aa6fb143ef4d59a14946175997479dbc2d1a3cd8
++    std::string sig = KmSignatureUtil::getHmacSignature(KM_HS256, "key",
++            "The quick brown fox jumps over the lazy dog");
++    ASSERT_EQ(sig.size(), 32u);
++    ASSERT_EQ(static_cast<unsigned char>(sig[0]), 0xf7);
++    ASSERT_EQ(static_cast<unsigned char>(sig[1]), 0xbc);
++    ASSERT_EQ(static_cast<unsigned char>(sig[2]), 0x83);
++    ASSERT_EQ(static_cast<unsigned char>(sig[3]), 0xf4);
++}
++
++TEST(HmacTest, DeterministicOutput)
++{
++    std::string sig1 = KmSignatureUtil::getHmacSignature(KM_HS256, "secret", "msg");
++    std::string sig2 = KmSignatureUtil::getHmacSignature(KM_HS256, "secret", "msg");
++    ASSERT_EQ(sig1, sig2);
++}
++
++TEST(HmacTest, DifferentKeysDifferentSigs)
++{
++    std::string sig1 = KmSignatureUtil::getHmacSignature(KM_HS256, "key1", "data");
++    std::string sig2 = KmSignatureUtil::getHmacSignature(KM_HS256, "key2", "data");
++    ASSERT_NE(sig1, sig2);
++}
++
++TEST(HmacTest, DifferentDataDifferentSigs)
++{
++    std::string sig1 = KmSignatureUtil::getHmacSignature(KM_HS256, "key", "data1");
++    std::string sig2 = KmSignatureUtil::getHmacSignature(KM_HS256, "key", "data2");
++    ASSERT_NE(sig1, sig2);
++}
++
++TEST(HmacTest, EmptyKeyAndData)
++{
++    std::string sig = KmSignatureUtil::getHmacSignature(KM_HS256, "", "");
++    ASSERT_FALSE(sig.empty());
++    ASSERT_EQ(sig.size(), 32u);
++}
++
++// ===========================================================================
++// kmTime tests
++// ===========================================================================
++
++TEST(Iso8601Test, ValidTimestampWithZ)
++{
++    // 2024-01-15T12:30:00Z -> epoch value
++    uint64_t t = kmTime::iso8601_to_time("2024-01-15T12:30:00Z");
++    ASSERT_GT(t, 0u);
++    // Verify approximate epoch: Jan 15 2024 = ~1705300200
++    ASSERT_GT(t, 1705000000u);
++    ASSERT_LT(t, 1706000000u);
++}
++
++TEST(Iso8601Test, ValidTimestampWithoutZ)
++{
++    uint64_t t = kmTime::iso8601_to_time("2024-01-15T12:30:00");
++    ASSERT_GT(t, 0u);
++}
++
++TEST(Iso8601Test, EpochTime)
++{
++    // 1970-01-01T00:00:00Z = 0
++    uint64_t t = kmTime::iso8601_to_time("1970-01-01T00:00:00Z");
++    ASSERT_EQ(t, 0u);
++}
++
++TEST(Iso8601Test, InvalidFormat)
++{
++    ASSERT_EQ(kmTime::iso8601_to_time("not-a-date"), 0u);
++}
++
++TEST(Iso8601Test, EmptyString)
++{
++    ASSERT_EQ(kmTime::iso8601_to_time(""), 0u);
++}
++
++TEST(Iso8601Test, SpecificKnownEpoch)
++{
++    // 2000-01-01T00:00:00Z = 946684800
++    uint64_t t = kmTime::iso8601_to_time("2000-01-01T00:00:00Z");
++    ASSERT_EQ(t, 946684800u);
++}
++
++TEST(Asn1TimeTest, UTCTimeFormat)
++{
++    // "240115123000Z" -> Jan 15, 2024 12:30:00 UTC
++    const unsigned char data[] = "240115123000Z";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, true, &seconds);
++    ASSERT_GT(seconds, 0u);
++    // Rough check: Jan 2024 epoch range
++    ASSERT_GT(seconds, 1705000000u);
++    ASSERT_LT(seconds, 1706000000u);
++}
++
++TEST(Asn1TimeTest, GeneralizedTimeFormat)
++{
++    // "20240115123000Z" -> Jan 15, 2024 12:30:00 UTC
++    const unsigned char data[] = "20240115123000Z";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, false, &seconds);
++    ASSERT_GT(seconds, 0u);
++    ASSERT_GT(seconds, 1705000000u);
++    ASSERT_LT(seconds, 1706000000u);
++}
++
++TEST(Asn1TimeTest, UTCTimeY2KBoundary)
++{
++    // "000101000000Z" -> Jan 1, 2000 00:00:00 UTC
++    // Year 00 => 2000 (< 50 so +100 => 100 + 1900 = 2000)
++    const unsigned char data[] = "000101000000Z";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, true, &seconds);
++    // 2000-01-01 = epoch 946684800
++    ASSERT_EQ(seconds, 946684800u);
++}
++
++TEST(Asn1TimeTest, UTCTimePre2000)
++{
++    // "990101000000Z" -> Jan 1, 1999 00:00:00 UTC
++    // Year 99 => 99 (>= 50 so stays 99; 99 + 1900 = 1999)
++    const unsigned char data[] = "990101000000Z";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, true, &seconds);
++    // 1999-01-01 = epoch 915148800
++    ASSERT_EQ(seconds, 915148800u);
++}
++
++TEST(Asn1TimeTest, UTCTimeTooShort)
++{
++    // Less than 10 digits — should not modify seconds
++    const unsigned char data[] = "240115";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, true, &seconds);
++    ASSERT_EQ(seconds, 0u);
++}
++
++TEST(Asn1TimeTest, GeneralizedTimeTooShort)
++{
++    // Less than 12 digits — should not modify seconds
++    const unsigned char data[] = "2024011512";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, false, &seconds);
++    ASSERT_EQ(seconds, 0u);
++}
++
++TEST(Asn1TimeTest, UTCTimeInvalidChars)
++{
++    const unsigned char data[] = "24XX15123000Z";
++    uint64_t seconds = 0;
++    kmTime::asn1_time_to_sec(data, sizeof(data) - 1, true, &seconds);
++    ASSERT_EQ(seconds, 0u);
++}
++
++TEST(GetCurrentTimeTest, ReturnsNonZero)
++{
++    uint64_t t = kmTime::get_current_time();
++    ASSERT_GT(t, 0u);
++    // Should be after Jan 1, 2020
++    ASSERT_GT(t, 1577836800u);
++}
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/Makefile	//depot/tmos/rocky/tm_daemon/keymgmtd/unittests/Makefile#0
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/Makefile	2026-03-18 02:22:47
+@@ -0,0 +1,107 @@
++# Makefile wrapper for keymgmtd unit tests
++# Builds and runs tests natively with system g++
++
++TOPDIR ?= ../../..
++BUILD_DIR := build
++SYS_ROOT := $(TOPDIR)/devfs_x86_64
++
++# GoogleTest paths
++GTEST_DIR := googletest-release-1.11.0
++GTEST_INCL := $(GTEST_DIR)/googletest/include
++GTEST_SRC := $(GTEST_DIR)/googletest/src
++GTEST_ALL := $(BUILD_DIR)/gtest-all.o
++# Note: test_main.cpp provides main(), so we don't need gtest_main.o
++
++# Compiler
++CXX := g++
++CXXFLAGS := -g -fPIC -std=c++11 -Wreturn-type -DBOOST_THREAD_PROVIDES_FUTURE -DOPENSSL_NO_KRB5
++
++# Include paths
++INCLUDES := -I. -I.. -I$(SYS_ROOT)/usr/include -I$(SYS_ROOT)/usr/include/mcp/schema_headers -Ilocal_include/usr/include -I$(GTEST_INCL)
++
++# Source files
++KEYMGMTD_SRCS := \
++	../bigip_keymgmtd_error_defs.cpp \
++	../KeyMgmtDaemon.cpp \
++	../BundleMgr.cpp \
++	../CRLMgr.cpp \
++	../McpdUtil.cpp \
++	../KeyMgmtOpenSSLUtil.cpp \
++	../CertOrderMgr.cpp \
++	../CAReqResp.cpp \
++	../CAReqRespDigicert.cpp \
++	../CAReqRespGodaddy.cpp
++
++TEST_SRCS := \
++	test_main_simple.cpp \
++	ComodoReqRespTest.cpp \
++	SymantecReqRespTest.cpp \
++	DigicertReqRespTest.cpp \
++	GodaddyReqRespTest.cpp \
++	CAReqRespBaseTest.cpp \
++	KmTimeUtilsTest.cpp
++# Excluded tests that depend on missing source files:
++#	JsonUtilTest.cpp (requires ../JsonUtil.cpp which doesn't exist yet)
++#	KeyMgmtOpenSSLUtilTest.cpp (requires KmSignatureUtil, kmTime::iso8601_to_time not implemented yet)
++# Using test_main_simple.cpp instead of test_main.cpp to avoid gcov dependency
++
++# Object files
++KEYMGMTD_OBJS := $(patsubst ../%.cpp,$(BUILD_DIR)/%.o,$(KEYMGMTD_SRCS))
++TEST_OBJS := $(patsubst %.cpp,$(BUILD_DIR)/%.o,$(TEST_SRCS))
++ALL_OBJS := $(KEYMGMTD_OBJS) $(TEST_OBJS)
++
++# Libraries (specify full .so.1.66.0 names for boost since .so symlinks don't exist)
++LIBS := -L$(SYS_ROOT)/usr/lib64 -L/usr/lib64 \
++	-Wl,-rpath,$(SYS_ROOT)/usr/lib64 -Wl,-rpath,/usr/lib64 \
++	-lpthread \
++	-lf5daemon -lmcpmsg -lmcpmsg++ -lcavecommon -lschemadata \
++	-lf5cppcommon -lf5util -lbss -lha_table -lfflag -lerrdefs \
++	-levent -lcrypto -lz -lssl \
++	/usr/lib64/libboost_system.so.1.66.0 \
++	/usr/lib64/libboost_thread.so.1.66.0 \
++	/usr/lib64/libboost_filesystem.so.1.66.0 \
++	/usr/lib64/libboost_iostreams.so.1.66.0 \
++	/usr/lib64/libboost_date_time.so.1.66.0 \
++	-lcurl -lfilemgmt -ltmstat -lf5util_c -lcertmgrutil \
++	-lrt -ldl
++
++# Test executable
++TEST_EXE := $(BUILD_DIR)/keymgmtd_utest
++
++.PHONY: all test unittest coverage clean
++
++all: test
++
++# Build and run unit tests
++test unittest: $(TEST_EXE)
++	@echo "Running keymgmtd unit tests..."
++	cd $(BUILD_DIR) && LD_LIBRARY_PATH=/usr/lib64:$(PWD)/$(SYS_ROOT)/usr/lib:$(PWD)/$(SYS_ROOT)/usr/lib64 ./keymgmtd_utest
++
++# Link test executable (depends on gtest objects)
++$(TEST_EXE): $(ALL_OBJS) $(GTEST_ALL)
++	@mkdir -p $(BUILD_DIR)
++	$(CXX) $(CXXFLAGS) -o $@ $(ALL_OBJS) $(GTEST_ALL) $(LIBS)
++
++# Build gtest-all.o
++$(GTEST_ALL): $(GTEST_DIR)/googletest/src/gtest-all.cc
++	@mkdir -p $(BUILD_DIR)
++	$(CXX) $(CXXFLAGS) -I$(GTEST_INCL) -I$(GTEST_DIR)/googletest -c $< -o $@
++
++# Compile keymgmtd source files
++$(BUILD_DIR)/%.o: ../%.cpp
++	@mkdir -p $(BUILD_DIR)
++	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
++
++# Compile test source files
++$(BUILD_DIR)/%.o: %.cpp
++	@mkdir -p $(BUILD_DIR)
++	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
++
++# Coverage target (simplified - just runs tests with coverage flags)
++coverage:
++	$(MAKE) CXXFLAGS="$(CXXFLAGS) -fno-inline -O0 --coverage" LIBS="$(LIBS) --coverage" test
++
++# Clean build artifacts
++clean:
++	rm -rf $(BUILD_DIR)
++
+--- //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/test_main_simple.cpp	//depot/tmos/rocky/tm_daemon/keymgmtd/unittests/test_main_simple.cpp#0
++++ //depot/tmos/rocky/tm_daemon/keymgmtd/unittests/test_main_simple.cpp	2026-03-18 02:15:20
+@@ -0,0 +1,26 @@
++#include <gtest/gtest.h>
++#include <sys/resource.h>
++#include <errno.h>
++#include <signal.h>
++#include <stdlib.h>
++
++// Simple test main without coverage support for now
++GTEST_API_ int main(int argc, char **argv)
++{
++    /* Enable core dump */
++    struct rlimit limit;
++    getrlimit(RLIMIT_CORE, &limit);
++    limit.rlim_cur = limit.rlim_max;
++    int res = setrlimit(RLIMIT_CORE, &limit);
++    if (res != 0) {
++        printf("setrlimit() failed with %s\n", strerror(errno));
++        return 1;
++    }
++
++    /* Init GTEST */
++    testing::InitGoogleTest(&argc, argv);
++
++    /* Run tests */
++    int ret = RUN_ALL_TESTS();
++    return ret;
++}
