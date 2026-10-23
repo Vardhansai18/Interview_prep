@@ -1,0 +1,86 @@
+Dear Candidate,
+Greetings from 8th Element!
+
+Thank you for applying for the Senior Backend & Systems Engineer position at our company. We’re pleased to invite you to our upcoming offline walk-in drive in Hyderabad.
+This is an opportunity to meet our team, discuss your engineering experience, and explore how you can contribute to building impactful backend systems and AI-powered solutions.
+ 
+Walk-In Drive Details
+Date: Saturday, 24th October 2026
+Reporting Time: 9:00 AM – 9:30 AM
+Location: 8th Element [ 10th Floor, Sri Harsha ICON, Narsingh, Nanakramguda Service Road, Financial District, Telangana - 500032 https://maps.app.goo.gl/Nt3fFzDnFeY7Noau5]
+Contact Person: Palak Agarwal, HR
+Contact Details: 9030942997
+
+A few things to keep in mind:
+Please carry an updated physical copy of your resume.
+Kindly arrive within the specified reporting window.
+The role requires a minimum of 4 years of relevant backend engineering experience.
+Strong backend engineering fundamentals are essential; familiarity with Generative AI or a willingness to learn is an added advantage.
+We look forward to meeting you, learning more about your experience, and discussing the opportunity to be part of our growing engineering team at 8th Element.
+ 
+Please reply to this email to confirm your availability for the walk-in drive.
+Looking forward to meeting you!
+
+What You'll Work On
+
+Backend systems and architecture: Design and build reliable backend services, APIs, data models, enterprise integrations and distributed workflows.
+
+Technical exploration: Research unfamiliar technologies, evaluate approaches, develop proofs of concept and validate assumptions before committing to a solution.
+
+Complex problem-solving: Investigate difficult technical issues, identify root causes and reason through trade-offs involving performance, reliability, scalability and cost.
+
+End-to-end ownership: Take systems from problem definition and architecture through implementation, deployment, observability and production support.
+
+Technical leadership: Guide design decisions, mentor engineers, conduct meaningful code reviews and raise the team's engineering standards.
+
+AI-powered systems: Depending on the project, work on LLM applications, retrieval systems, AI agents and intelligent workflows.
+
+What We're Looking For
+
+Strong engineering fundamentals-
+
+Strong programming skills in Python or another backend language, with the ability to become productive in Python.
+
+Experience building production backend services and APIs, with a solid understanding of system design, databases, SQL and data modelling.
+
+Familiarity with asynchronous programming, concurrency, distributed systems and failure handling.
+
+Experience with testing, CI/CD, Docker, cloud deployments and production debugging.
+
+Technical depth and problem-solving-
+
+You understand the reasoning and trade-offs behind your technical decisions, not just how to implement them.
+
+You can break down ambiguous problems, challenge assumptions and investigate root causes systematically.
+
+You can navigate unfamiliar codebases and technologies, learn quickly and make progress without needing detailed instructions.
+
+You care about code quality, simplicity, reliability and long-term maintainability.
+
+Ownership and technical leadership-
+
+You've taken ownership of a service, subsystem, major feature or significant engineering initiative.
+
+You've mentored other engineers, guided implementation decisions or helped improve a team's technical capabilities.
+
+You can make decisions with incomplete information, identify risks early and take responsibility for outcomes.
+
+You communicate clearly, collaborate effectively and can lead through technical credibility rather than relying on formal authority.
+
+Good To Have, Not Required
+
+Experience with LLMs, GenAI, AI agents, RAG, vector databases, model evaluation or AI observability is valuable.
+
+We don't expect expertise across a particular AI technology stack. We'd rather hire a strong systems engineer who can learn AI than someone who knows AI frameworks but lacks engineering depth.
+
+How We Work
+
+We're a small team where engineers help shape the problem, not just implement a predefined specification. You'll work directly with engineers, product leaders, domain experts and clients, contributing to technical research, architecture, implementation and production operations.
+
+We use AI extensively in our engineering workflows. We expect you to use these tools effectively while retaining the judgment to evaluate their output, understand the code and own what you ship.
+
+You'll have the opportunity to influence our engineering practices, build reusable capabilities and help shape the technical direction of a growing AI-first company.
+
+We're looking for engineers who think deeply, take ownership and make the people around them better.
+
+Skills: python,system design,ci/cd,sql,docker
