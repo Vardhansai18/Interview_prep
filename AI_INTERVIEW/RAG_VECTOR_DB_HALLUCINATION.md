@@ -1,4 +1,4 @@
-# RAG, Vector Databases, and Hallucination
+# RAG, Vector Databases, Hallucination, and Temperature
 
 Interview answers with a real-life example: a company HR chatbot that answers questions from the employee handbook.
 
@@ -8,6 +8,7 @@ Interview answers with a real-life example: a company HR chatbot that answers qu
 2. [What is meant by a vector database?](#what-is-a-vector-database)
 3. [What problems do you get with RAG and without RAG?](#problems-with-and-without-rag)
 4. [What is hallucination, and how do you prevent it?](#what-is-hallucination)
+5. [What is temperature in a model, and how does it improve the answer?](#what-is-temperature)
 
 ---
 
@@ -211,3 +212,51 @@ Answer:
 > Source: leave-policy-india.pdf, Leave section, effective 1 Jan 2026.
 
 If the handbook has no contractor policy, the bot says it could not find that rule, instead of inventing one.
+
+---
+
+<a id="what-is-temperature"></a>
+
+## 5. What is temperature in a model, and how does it improve the answer?
+
+**Temperature** is a setting (a hyperparameter) that controls how creative, random, or predictable the model's next word is.
+
+It usually ranges from **0.0 to 1.0**, and some APIs allow values above 1.0.
+
+| Setting | Behavior |
+| --- | --- |
+| Low temperature (closer to 0.0) | Deterministic, safe, and focused. The model almost always picks the most probable next word. The same question tends to get the same answer. |
+| High temperature (closer to 1.0) | Creative and varied. The model is willing to pick less obvious words, so answers differ from one run to the next. |
+
+Temperature does not add new facts. It only changes how the model chooses among words it was already considering. A low temperature repeats the safest choice. A high temperature samples further down the list.
+
+### Real-life example: the cocktail bartender
+
+You walk into a bar and order a drink. The bartender's behavior changes with their temperature setting.
+
+**Temperature = 0.0 (the strict recipe bartender)**
+
+This bartender follows the official recipe with absolute precision. A Gin and Tonic is exactly 2 oz of gin and 4 oz of tonic, measured to the drop. Every time you order it, the drink tastes the same: predictable and correct.
+
+Use this in AI for coding, math, legal document analysis, and resume tailoring. You want strict, factual execution, not creativity.
+
+**Temperature = 0.8 (the creative mixologist)**
+
+This bartender sets the recipe book aside. They add a splash of elderflower liqueur, a twist of burnt orange peel, and a pinch of chili salt. You often get a unique, surprising cocktail. Sometimes the experiment goes too far and the drink is undrinkable.
+
+Use this in AI for brainstorming marketing slogans, writing science-fiction, or coming up with gift ideas.
+
+### How temperature improves the answer
+
+The improvement comes from matching the setting to the task. The same model gives a better answer for facts at a low temperature and a better answer for ideas at a high temperature.
+
+| Task | Ideal temperature | Why |
+| --- | --- | --- |
+| Resume tailoring | 0.0 to 0.2 | Stops the model from inventing jobs, skills, or dates. This cuts one source of hallucination. |
+| Writing code | 0.0 to 0.2 | Keeps syntax exact and avoids random or broken logic. |
+| Brainstorming / copywriting | 0.7 to 1.0 | Pushes the model toward diverse wording and unexpected ideas. |
+
+**HR bot example**
+
+- "How many paid sick days in India?" should run at **0.0 to 0.2**. The useful answer is the same every time: 12 days, no carry forward. A high temperature might paraphrase that into "about 10 to 15 days."
+- "Give me five subject lines for the leave-policy announcement email" should run at **0.7 to 1.0**. A temperature of 0 keeps repeating the same safe line. A higher temperature produces different options you can choose from.
