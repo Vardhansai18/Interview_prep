@@ -143,35 +143,44 @@ Speak each answer in about a minute. **STAR** means Situation, Task, Action, Res
 - **Action.** I built PRISM as an orchestrator with three specialists and hard gates. Triage can stop the run. A confidence score below 90 blocks the patch. A separate verifier checks citations. The engineer accepts the diff before Perforce is edited.
 - **Result.** The investigation, the evidence chain, the patch draft, the test plan, and the review description come out of one workflow. The engineer spends time on the judgment calls.
 
-### 2. Walk me through what happens for one bug.
+### 2. Why is it called PRISM?
+
+The agent files never expand PRISM into an acronym. Do not invent one in the interview.
+
+- **Situation.** The workflow needed a name that matched what it does: take one opaque bug and separate it into evidence you can inspect.
+- **Task.** Pick a name people can remember, without pretending it is a formal acronym.
+- **Action.** A prism takes one mixed beam and separates it into distinct bands. PRISM does that with a Bugzilla bug: triage, source, hypotheses, a score, and a patch. A patch is allowed only when that picture is clear, which means a confidence score of 90, a passing verifier, and the engineer accepting the diff. The related name in the code is SAGE. Those are the module skill files PRISM loads before it analyzes a crash. SAGE holds the knowledge. PRISM is the workflow that uses it.
+- **Result.** If they ask what it stands for, say it is a name, then give that explanation. Do not spell out letters that are not in the repo.
+
+### 3. Walk me through what happens for one bug.
 
 - **Situation.** An engineer has a Bugzilla ID and a workspace with Perforce.
 - **Task.** Produce a minimal, reviewable fix with a proven cause.
 - **Action.** PRISM checks API keys, then asks bugzilla-triage to fetch the bug. A duplicate or RFC-expected behavior ends the run. Otherwise it reads linked Confluence pages, syncs that module locally, and loads the module skill file. Root-cause analysis forms one primary hypothesis and two alternatives, and scores the evidence. Under 90, it reads more code or, for a core, calls mcpd-debug. At 90 it drafts a fix at the highest layer that removes the cause. mcpd-verifier audits the evidence and the diff. The engineer accepts it. Then compile, changelist, test plan, release notes, Review Board, and a learning written back to the skill file.
 - **Result.** One bug leaves with a cited root cause, a gated patch, and a review. A weak bug leaves with a question, not a guess.
 
-### 3. Why can the system refuse to write a fix?
+### 4. Why can the system refuse to write a fix?
 
 - **Situation.** A model will happily invent a root cause when the backtrace is incomplete.
 - **Task.** Make “I don’t know yet” a successful outcome.
 - **Action.** Phase 3 scores ten criteria: crash line matched, bad value traced, trigger named, alternatives disproved, every step cited, skill file checked, full path traced, related bugs, precise language, caller assumptions. Below 70, it stops. From 70 to 89, Phase 3.5 gathers more evidence. Still under 90, it asks for logs, a core, or a specific file. Phase 4 does not run.
 - **Result.** The gate is the product. A wrong patch in mcpd is more expensive than a day of waiting.
 
-### 4. Why several agents instead of one long prompt?
+### 5. Why several agents instead of one long prompt?
 
 - **Situation.** Triage, C++ debugging, and skepticism are different jobs. One context window also loses state on a long bug.
 - **Task.** Keep each role narrow and keep the verifier honest.
 - **Action.** bugzilla-triage only handles Bugzilla, duplicates, component mapping, and RFC checks. mcpd-debug only runs GDB when a core exists and confidence is still low. mcpd-verifier is not allowed to see PRISM’s reasoning. It recomputes the score from raw evidence and must try to disprove the hypothesis. PRISM owns the sequence and the resume protocol, because a dropped session used to risk a second changelist or a second review.
 - **Result.** A failure has a phase to return to. The verifier cannot rubber-stamp the orchestrator’s story.
 
-### 5. How do you catch a hallucinated root cause?
+### 6. How do you catch a hallucinated root cause?
 
 - **Situation.** The model can cite a line that does not exist, or say “likely” when the evidence is thin.
 - **Task.** Fail closed before any file is edited.
 - **Action.** The verifier runs deterministic checks first: every finding has a source, the primary hypothesis has no weasel words, every `file:line` exists, the score matches the rubric within 5 points, GDB text matches the interpretation, and the diff touches only the claimed lines. New error paths must be logged. An unbounded loop fails. A pattern copied from startup code into a request path fails. Only if those pass does a second pass judge the evidence with no access to PRISM’s write-up. Three failures escalate to the engineer.
 - **Result.** A patch cannot proceed on a paraphrase. It proceeds on a citation the verifier could open.
 
-### 6. Tell me about a design change that came from a real run.
+### 7. Tell me about a design change that came from a real run.
 
 - **Situation.** On bug 2053441, depot-wide `p4 grep` was slow and failed because every search crossed the network.
 - **Task.** Make code reading reliable for later bugs.
@@ -180,14 +189,14 @@ Speak each answer in about a minute. **STAR** means Situation, Task, Action, Res
 
 Use a second bug of your own here if you remember the ID, the score, and whether the gate blocked. That story is stronger than this one if you can tell it cleanly.
 
-### 7. How do you decide the shape of the fix?
+### 8. How do you decide the shape of the fix?
 
 - **Situation.** The obvious edit is often a null check at the crash site. The bad state was created earlier.
 - **Task.** Fix the origin, and also survive state that is already corrupt.
 - **Action.** PRISM ranks options. First choice is the invariant that should have blocked the bad state. Second is ownership or transaction scope. A defensive handler is added when old state may already be in memory or in config sync, and it is paired with the upstream fix. Before the diff is shown, callers, thread safety, MVCC, high availability, and sibling paths are checked. The engineer must accept the diff. Compile runs only after they confirm the build command.
 - **Result.** The review contains the cause, the layer that was fixed, and a test plan: regression, success path, boundary, error path, and HA or concurrency when those apply.
 
-### 8. What did you own, versus what the model did?
+### 9. What did you own, versus what the model did?
 
 - **Situation.** The role asks for ownership, not a demo of a framework.
 - **Task.** Be able to say which decisions were yours.
@@ -196,14 +205,14 @@ Use a second bug of your own here if you remember the ID, the score, and whether
 
 ## Scaling and challenges
 
-### 9. This works for one engineer and one bug. How do you scale it?
+### 10. This works for one engineer and one bug. How do you scale it?
 
 - **Situation.** Each run is sequential, interactive, and tied to one workspace and one Perforce client.
 - **Task.** Let many bugs move without an engineer watching every phase.
 - **Action.** Put bugs on a queue. One worker per bug through triage and root cause, which are read-only. Pause any bug under 90 for a human. Auto-continue only at 90 with a passing verifier. Compile in CI instead of an interactive tmux session. Keep Perforce edits and Review Board creation on the accept step. Store evidence, score, and diff so a new session resumes without redoing phases. That resume protocol already exists for one session. The queue is the missing layer.
 - **Result.** Engineers review a short list of blocked bugs and accepted patches. They stop babysitting every phase.
 
-### 10. What breaks first?
+### 11. What breaks first?
 
 - **Context loss.** A long bug already needed a resume protocol so the agent would not open a second changelist. At higher volume that state has to live in a database, not in the chat.
 - **Module knowledge.** Quality depends on skill files and a local sync of that module. A daemon with no skill file drops confidence and stops. That is safe, and it caps coverage.
@@ -214,21 +223,21 @@ Use a second bug of your own here if you remember the ID, the score, and whether
 
 Pick two of these in the interview and talk about them.
 
-### 11. How would you know the confidence score is real?
+### 12. How would you know the confidence score is real?
 
 - **Situation.** A rubric can look strict and still be overconfident.
 - **Task.** Calibrate 90 against bugs whose cause is already known.
 - **Action.** Take historical bugs with a known root cause and a submitted fix. Run PRISM with the fix hidden. Record the score, whether H1 matches the real cause, and whether a score under 90 would have stopped a wrong H1. Track false stops too: correct cause, score under 90. Adjust the rubric from that set. Reviewer comments in Phase 11 are the live signal. A reviewer rejecting the cause is a missed gate.
 - **Result.** 90 means “this matched held-out bugs,” not “the prompt told itself it was sure.”
 
-### 12. How would you take this beyond mcpd?
+### 13. How would you take this beyond mcpd?
 
 - **Situation.** Subagents, skill paths, and the build target `mcpd-x86_64` are specific to this daemon.
 - **Task.** Keep the gates, replace the domain knowledge.
 - **Action.** The portable parts are the orchestrator, the evidence schema, the two thresholds, the isolated verifier, and the accept-before-edit rule. The replaceable parts are the triage source, the skill files, and the debug tool. A new service gets its own skill file and its own test command. It does not get a weaker gate.
 - **Result.** The company can reuse the control system. It should not copy mcpd’s GDB steps onto an unrelated backend.
 
-### 13. What would you do differently if you started again?
+### 14. What would you do differently if you started again?
 
 - Persist phase state outside the chat from day one.
 - Build the calibration set before tuning the rubric.
