@@ -6,6 +6,9 @@ Use this after Parts 1–4. These are the questions that arrive once the intervi
 
 ## Q24. The tunnel shows up. The application still fails. How do you debug it?
 
+![Five checks from path down to MTU.](images/q24-debug-ladder.png)
+
+
 **Short answer**
 
 Decide whether the handshake is down, the data path is down, or only large packets are down. Those three have different fixes. Then check one direction at a time.
@@ -64,6 +67,11 @@ You do not need to decode ESP by hand. You need to say which of those patterns y
 
 ## Q25. What is MOBIKE, and when would a laptop use it?
 
+![The same IKE SA moves from Wi-Fi to LTE.](images/q25-mobike.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 MOBIKE lets IKEv2 update the client’s address when the laptop moves from Wi-Fi to mobile data, without tearing down the login and starting EAP again.
@@ -85,6 +93,9 @@ The tunnel looks up for a while, then DPD expires it, then the client reconnects
 ---
 
 ## Q26. What is the difference between policy-based and route-based VPN?
+
+![Traffic selectors beside a virtual tunnel interface.](images/q26-policy-vs-route.png)
+
 
 **Short answer**
 
@@ -112,6 +123,9 @@ Routing protocols and multicast needed an interface, and classic policy-based IP
 
 ## Q27. How do anti-replay and SA lifetimes limit the damage of a stolen key?
 
+![Sequence numbers and SA lifetimes.](images/q27-replay-and-lifetime.png)
+
+
 **Short answer**
 
 Anti-replay stops an attacker from re-sending a packet you already accepted. Lifetimes throw the keys away on a schedule, so a stolen data key opens only a window, not the permanent history of the tunnel.
@@ -135,6 +149,9 @@ All tunnels were configured with the same lifetime and came up together, for exa
 ---
 
 ## Q28. What would you monitor in production?
+
+![Eight signals worth watching in production.](images/q28-monitoring.png)
+
 
 **Short answer**
 
@@ -164,6 +181,9 @@ It can be. They are on TCP 443, often on a lossy guest network, with TCP inside 
 
 ## Q29. How does failover work if the gateway reboots?
 
+![Reboot, DPD, new handshake, new connections.](images/q29-failover.png)
+
+
 **Short answer**
 
 The SAs live in memory. A reboot deletes them. Clients detect the dead peer and build a new tunnel to the same virtual address, or to a second gateway. Users may notice a short reconnect. They should not need a new account or a new configuration.
@@ -189,6 +209,9 @@ Split brain. Two gateways answer IKE, or the return route for the virtual-IP poo
 ---
 
 ## Q30. Mock round — say these out loud in one sitting
+
+![Mock round grouped into basics, handshake, resume, and debug.](images/q30-mock-round.png)
+
 
 Time box: 20 minutes. Cover the short answer only. Then pick two follow-ups you stumbled on and redo them with the example.
 

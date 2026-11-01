@@ -6,6 +6,11 @@ Start here. If these answers are shaky, the resume stories will sound memorised.
 
 ## Q1. What is IPsec?
 
+![Clear packet locked by IPsec, then the four security properties.](images/q01-what-is-ipsec.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 IPsec is a suite of protocols that protects IP packets. It encrypts them so nobody on the path can read them, and it authenticates them so the receiver knows they came from the real peer and were not modified.
@@ -41,6 +46,9 @@ At the network layer. That is why it protects every application above it. TLS pr
 
 ## Q2. Why do companies use IPsec at all?
 
+![Remote access beside site-to-site.](images/q02-why-ipsec.png)
+
+
 **Short answer**
 
 To let remote users and branch offices use private company systems over the internet, without making those systems public and without sending the traffic in clear text.
@@ -70,6 +78,9 @@ HTTPS protects the login to that one site. It does not give the laptop an addres
 
 ## Q3. What is the difference between ESP and AH?
 
+![ESP hides the payload. AH does not.](images/q03-esp-vs-ah.png)
+
+
 **Short answer**
 
 ESP encrypts the packet and can also authenticate it. AH only authenticates the packet. Production VPNs use ESP.
@@ -96,6 +107,9 @@ Because the usual requirement is “hide the data,” and AH does not hide it. E
 ---
 
 ## Q4. What is tunnel mode, and what is transport mode?
+
+![Tunnel mode adds an outer IP header. Transport mode does not.](images/q04-tunnel-vs-transport.png)
+
 
 **Short answer**
 
@@ -128,6 +142,9 @@ Remote access uses tunnel mode. The laptop is given an internal virtual IP. Pack
 
 ## Q5. What does the laptop actually get when the VPN connects?
 
+![Virtual IP, DNS, routes, split tunnel and full tunnel.](images/q05-what-the-laptop-gets.png)
+
+
 **Short answer**
 
 An internal IP address, internal DNS, and a route that sends company traffic into the tunnel. The apps keep using normal IP. The VPN client and the gateway hide the encryption.
@@ -159,6 +176,9 @@ For a company laptop that is managed and holds customer data, full tunnel is the
 ---
 
 ## Q6. How is IPsec different from SSL VPN?
+
+![IPsec on UDP compared with SSL VPN on TCP 443.](images/q06-ipsec-vs-ssl.png)
+
 
 **Short answer**
 
@@ -193,6 +213,9 @@ Because on a normal home router IPsec is up, it uses less overhead, and it avoid
 ---
 
 ## Q7. What are the building blocks I should name before I talk about the handshake?
+
+![ESP, IKE, SA, policy, and the SPI.](images/q07-building-blocks.png)
+
 
 **Short answer**
 

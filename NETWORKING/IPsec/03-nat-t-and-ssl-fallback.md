@@ -10,6 +10,11 @@ Interviewers will ask you to explain the failure, then the fallback, then when y
 
 ## Q14. Why does IPsec break behind NAT?
 
+![Plain ESP fails behind NAT. UDP 4500 gives the packet a port.](images/q14-nat.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 Home and hotel routers rewrite source addresses. Plain ESP has no TCP or UDP port, so many of those routers drop it or cannot tell two laptops apart. NAT-T fixes that by wrapping ESP inside UDP port 4500. If the router or a firewall still blocks UDP 500 and 4500, IPsec cannot come up.
@@ -54,6 +59,9 @@ NAT mappings expire. Many routers forget a UDP flow after 30 to 120 seconds of s
 
 ## Q15. Which ports should I be able to list without thinking?
 
+![UDP 500, UDP 4500, ESP, AH, and TCP 443.](images/q15-ports.png)
+
+
 **Short answer**
 
 UDP 500 for IKE, UDP 4500 for NAT-T, IP protocol 50 for ESP, and TCP 443 for the SSL fallback.
@@ -81,6 +89,9 @@ IKE is a short request-response handshake, and ESP already has its own sequence 
 ---
 
 ## Q16. What does “the router does not support NAT-T” mean for the user?
+
+![Path failures can fall back. Auth and MTU failures cannot.](images/q16-path-versus-auth.png)
+
 
 **Short answer**
 
@@ -115,6 +126,11 @@ The whole design of the fallback is this distinction. A fallback that treats eve
 ---
 
 ## Q17. Why fall back to SSL VPN on port 443?
+
+![Try IPsec, stay if it comes up, switch to TLS only if UDP dies.](images/q17-fallback.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
 
 **Short answer**
 
@@ -155,6 +171,11 @@ A small non-blocking note such as “Connected over HTTPS because the network bl
 ---
 
 ## Q18. An interviewer says “Walk me through a hotel user, packet by packet.”
+
+![Hotel addresses, blocked IPsec, then TLS on 443.](images/q18-hotel-walkthrough.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
 
 **Short answer**
 

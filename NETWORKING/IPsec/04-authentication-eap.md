@@ -10,6 +10,9 @@ The interviewer is checking two things. Do you know where the password sits in t
 
 ## Q19. Why not just put a certificate on every laptop?
 
+![Pre-shared key, client certificate, and EAP-MSCHAPv2.](images/q19-auth-methods.png)
+
+
 **Short answer**
 
 A certificate per laptop is strong, and it is operationally expensive. Every new hire, re-image, contractor, and lost laptop needs issuance, install, renewal, and revocation. EAP-MSCHAPv2 lets the user sign in with the directory account they already have. The gateway still uses a certificate. The laptop does not need its own.
@@ -49,6 +52,11 @@ For a high-security device, client certificates or certificates plus EAP are sti
 
 ## Q20. What is EAP, and what is MSCHAPv2?
 
+![Challenge and response. The password stays on the laptop.](images/q20-mschapv2.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 EAP is a framework for “ask the user to prove who they are,” with room for many methods. MSCHAPv2 is one method: a challenge and a response based on the password. The password itself is never sent.
@@ -81,6 +89,9 @@ Because the directory stores a hash, and RADIUS servers in a Windows environment
 
 ## Q21. Where exactly does EAP sit in the IKEv2 handshake?
 
+![Diffie-Hellman, gateway certificate, EAP, then the child SA.](images/q21-where-eap-sits.png)
+
+
 **Short answer**
 
 After Diffie-Hellman, inside IKE_AUTH. The gateway proves itself with a certificate first. Then EAP runs. Then a child SA is created. User packets wait until all of that succeeds.
@@ -112,6 +123,9 @@ You call your bank. The call is on a private line first (IKE_SA_INIT). The bank 
 ---
 
 ## Q22. How does this remove work for the admin?
+
+![New hire, lost laptop, and re-image without per-laptop certificates.](images/q22-admin-work.png)
+
 
 **Short answer**
 
@@ -153,6 +167,9 @@ Those decisions belong to APM either way. EAP is the handoff from IKE into that 
 ---
 
 ## Q23. What attacks should you bring up yourself?
+
+![Six attacks and the control for each.](images/q23-attacks.png)
+
 
 **Short answer**
 

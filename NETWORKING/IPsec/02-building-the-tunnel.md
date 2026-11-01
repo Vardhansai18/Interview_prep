@@ -20,6 +20,11 @@ Laptop                         BIG-IP gateway                 Internal app
 
 ## Q8. Walk me through how an IPsec tunnel comes up
 
+![IKE_SA_INIT, then IKE_AUTH, then the child SA.](images/q08-handshake.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 IKE runs first and builds a secure management channel. Inside that channel the peers prove who they are and agree on the data tunnel. Only then do user packets flow inside ESP.
@@ -58,6 +63,11 @@ The first key protects the conversation about the tunnel. The child SA is a sepa
 
 ## Q9. What is Diffie-Hellman doing in that handshake?
 
+![Diffie-Hellman paint analogy, and what it does not prove.](images/q09-diffie-hellman.gif)
+
+*This picture moves. Give each frame a couple of seconds and say what changed.*
+
+
 **Short answer**
 
 It lets two sides that have never shared a secret create one, while an eavesdropper on the path sees only public numbers and cannot compute the secret.
@@ -88,6 +98,9 @@ No. An attacker who can intercept and modify the handshake can do Diffie-Hellman
 
 ## Q10. What is a proposal, and why do tunnels fail when both sides are “configured”?
 
+![Two algorithm bundles with nothing in common.](images/q10-proposal-mismatch.png)
+
+
 **Short answer**
 
 A proposal is the list of algorithms you are willing to use. Both sides must share one complete match: encryption, integrity, DH group, and lifetime rules. If they do not, IKE fails before any user login.
@@ -115,6 +128,9 @@ The schema separates an IKE proposal from an IPsec (child) proposal, because the
 ---
 
 ## Q11. What is IKEv1 main mode versus aggressive mode, and why do you prefer IKEv2?
+
+![IKEv1 main mode, aggressive mode, and IKEv2.](images/q11-ike-versions.png)
+
 
 **Short answer**
 
@@ -148,6 +164,9 @@ A laptop sleeps, or the user walks out of Wi-Fi range, and never sends a “dele
 
 ## Q12. What is perfect forward secrecy?
 
+![The certificate proves identity. The child SA has its own key.](images/q12-pfs.png)
+
+
 **Short answer**
 
 Perfect forward secrecy means the data-tunnel keys come from their own Diffie-Hellman exchange. If someone later steals the gateway certificate or the pre-shared key, they still cannot decrypt sessions they recorded in the past.
@@ -171,6 +190,9 @@ On the child SA, sometimes called the IPsec policy or the PFS group, not on the 
 ---
 
 ## Q13. What did the configuration model look like?
+
+![Six configuration objects in the IPsec UI.](images/q13-config-objects.png)
+
 
 **Short answer**
 

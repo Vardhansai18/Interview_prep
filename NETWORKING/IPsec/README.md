@@ -16,10 +16,11 @@ Your resume stories sit in parts 3 and 4. Parts 1 and 2 are what they ask before
 
 ## How to use this before an interview
 
-1. Answer the short version without looking.
-2. Then tell the real-life example in your own words. Interviewers remember the example.
-3. Only after that, check the follow-up. If you can answer the follow-up, you own the topic.
-4. On the day, re-read only the [60-second resume pitch](#60-second-resume-pitch) and the [one-page card](#one-page-card) at the bottom of this file.
+1. Look at the picture under the question and name every label before you read the answer. Eight pictures are short animations. Each frame stays up for about two seconds.
+2. Answer the short version without looking.
+3. Then tell the real-life example in your own words. Interviewers remember the example.
+4. Only after that, check the follow-up. If you can answer the follow-up, you own the topic.
+5. On the day, re-read only the [60-second resume pitch](#60-second-resume-pitch) and the [one-page card](#one-page-card) at the bottom of this file.
 
 ---
 
