@@ -44,6 +44,49 @@ At the network layer. That is why it protects every application above it. TLS pr
 
 ---
 
+## Q1b. What is the ESP header?
+
+![The ESP header is the label on the locked packet: SPI, sequence number, hidden payload, and a tamper check.](images/q01b-esp-header.png)
+
+**Short answer**
+
+The ESP header is the label on the locked box that IPsec puts around an IP packet. It tells the gateway which key opens that box, and it proves the box was not opened or copied along the way.
+
+**Explain it**
+
+ESP means Encapsulating Security Payload. It is IP protocol 50. The café can see the label. It cannot see the document inside.
+
+Four parts are worth saying out loud:
+
+| Part | What it is | Why it is there |
+| --- | --- | --- |
+| SPI | A locker number | The gateway has many tunnels. The SPI picks which key decrypts this packet. It is not the key. |
+| Sequence number | Parcel 1, parcel 2, parcel 3 | If someone replays an old packet, that number was already seen and the packet is dropped. |
+| Encrypted payload | The real packet, scrambled | In tunnel mode this is the whole original IP packet, including the private addresses `10.50.1.20 → 10.1.1.50`. |
+| Integrity check | A tamper sticker | The gateway recalculates it. If the sticker does not match, the packet was changed and is thrown away. |
+
+The outside address on the packet is a normal IP header: café public IP → company gateway. That part is not the ESP header. The ESP header is the sticker that comes after it.
+
+**Real-life example**
+
+You send an HR letter from a café. The post office cannot deliver to “desk 20, finance floor,” so the laptop puts that letter in a sealed courier bag.
+
+- The bag’s outside address is the outer IP header. The post office can read it.
+- The sticker on the bag is the ESP header. Locker 42 is the SPI. “Parcel number 18” is the sequence number.
+- The letter inside is encrypted. The gateway looks at locker 42, takes the matching key, checks the tamper sticker, and only then opens the bag and walks the letter to the HR server.
+
+The password and the encryption key never appear on that sticker. Anyone on the café Wi-Fi can see locker 42 and the packet size. They still cannot read the HR request.
+
+**Follow-up: Is the SPI a secret?**
+
+The SPI is a locker number, not a key. It has to be visible, because the gateway reads it before it knows which key to try. Hiding the SPI would leave the gateway unable to choose a key.
+
+**Follow-up: What is inside the encrypted part in tunnel mode?**
+
+The whole original IP packet. After the gateway decrypts it, a next-header field says “this inner content is IP.” The gateway then forwards that inner packet to `10.1.1.50`. Padding is added so the encrypted block fits the cipher. You do not need to recite the padding length unless they ask what else sits in the trailer.
+
+---
+
 ## Q2. Why do companies use IPsec at all?
 
 ![Remote access beside site-to-site.](images/q02-why-ipsec.png)
@@ -255,7 +298,8 @@ Because each direction has its own key and its own sequence numbers. In practice
 You should be able to answer these without notes before you move on:
 
 1. What four security properties does IPsec give you?
-2. Why ESP and not AH for a remote user?
-3. Why tunnel mode for a laptop on hotel Wi-Fi?
-4. Why try IPsec before SSL VPN?
-5. What is an SA, and what is an SPI?
+2. What are the four parts of an ESP header, and is the SPI the key?
+3. Why ESP and not AH for a remote user?
+4. Why tunnel mode for a laptop on hotel Wi-Fi?
+5. Why try IPsec before SSL VPN?
+6. What is an SA, and what is an SPI?

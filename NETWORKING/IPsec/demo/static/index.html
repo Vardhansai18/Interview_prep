@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IPsec VPN map</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <p class="eyebrow">Teaching map · not a real tunnel</p>
+      <h1>Watch the packet move</h1>
+    </div>
+    <nav id="scenes" class="modes" aria-label="Which path to draw"></nav>
+  </header>
+  <p id="caption" class="caption">Loading the map…</p>
+  <div id="stage"></div>
+  <section class="lab" aria-label="Change the network and replay">
+    <form id="scenario">
+      <label>Place
+        <select name="place">
+          <option value="home">Home · NAT, UDP open</option>
+          <option value="hotel">Hotel · UDP blocked</option>
+          <option value="office">Office · no NAT</option>
+        </select>
+      </label>
+      <label>Product
+        <select name="product">
+          <option value="none">No VPN</option>
+          <option value="ipsec-only">IPsec only</option>
+          <option value="ssl">SSL VPN</option>
+          <option value="ipsec-vpn" selected>IPsec VPN</option>
+        </select>
+      </label>
+      <label>Password
+        <select name="password">
+          <option value="ok">Correct</option>
+          <option value="bad">Wrong</option>
+        </select>
+      </label>
+      <button class="run" type="submit">Run on the map</button>
+    </form>
+    <ul class="legend">
+      <li><i class="swatch open"></i>Readable packet</li>
+      <li><i class="swatch esp"></i>ESP lock</li>
+      <li><i class="swatch tls"></i>TLS lock</li>
+      <li><i class="swatch block"></i>Blocked hop</li>
+    </ul>
+  </section>
+  <script src="app.js"></script>
+</body>
+</html>

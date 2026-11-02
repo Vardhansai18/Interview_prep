@@ -179,6 +179,25 @@ def q01(step):
     return im
 
 
+def q01b():
+    im, d = new("Q1b", "What is the ESP header?", "The label on the locked box. The key is not written on it.")
+    rows = [
+        ("Outer IP header", "Café public IP  →  gateway public IP", "Visible to the café. This is not the ESP header.", SLATE, SLATE_SOFT),
+        ("ESP header", "SPI = locker 42      Sequence = parcel 18", "Picks the key. Drops a replayed packet.", BLUE, BLUE_SOFT),
+        ("Encrypted payload", "10.50.1.20  →  10.1.1.50   is hidden", "The original IP packet sits in here.", GREEN, GREEN_SOFT),
+        ("Integrity check", "Tamper sticker", "If it does not match, the gateway throws the packet away.", AMBER, AMBER_SOFT),
+    ]
+    y = 145
+    for title, value, why, ink, fill in rows:
+        panel(d, 36, y, 1368, 140, fill, ink)
+        d.text((60, y + 28), title, font=F_H, fill=ink)
+        d.text((60, y + 68), value, font=F_B, fill=NAVY)
+        d.text((60, y + 104), why, font=F_P, fill=INK)
+        y += 152
+    footer(d, "Protocol 50. The café sees the locker number and the packet size, not the HR letter.")
+    return im
+
+
 def q02():
     im, d = new("Q2", "Why companies use IPsec", "Private addresses and private data, over the public internet.")
     panel(d, 36, 150, 670, 560, WHITE, BLUE)
@@ -790,6 +809,7 @@ def q30():
 
 def main():
     pngs = {
+        "q01b-esp-header": q01b,
         "q02-why-ipsec": q02,
         "q03-esp-vs-ah": q03,
         "q04-tunnel-vs-transport": q04,

@@ -4,6 +4,8 @@ Practice these out loud. Each question has a short answer you can start with, a 
 
 Your resume stories sit in parts 3 and 4. Parts 1 and 2 are what they ask before they let you reach those stories.
 
+To see the same story as a clickable packet, run the [demo](demo/README.md).
+
 | Part | What it covers | File |
 | --- | --- | --- |
 | 1 | What IPsec is, and what problem it solves | [Basics](01-basics.md) |
